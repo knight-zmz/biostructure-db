@@ -6,12 +6,36 @@ on:
   workflow_dispatch:
 
 jobs:
-  deploy:
+  test:
     runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Run lint
+      run: npm run lint --if-present
+    
+    - name: Build
+      run: npm run build --if-present
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
     
     steps:
-    - name: 📥 Checkout
+    - name: 📥 Checkout code
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
     - name: 🟢 Setup Node.js
       uses: actions/setup-node@v4
@@ -20,35 +44,41 @@ jobs:
         cache: 'npm'
 
     - name: 📦 Install dependencies
-      run: npm ci
+      run: |
+        npm ci
+        npm install -g pm2
 
     - name: 🏗️ Build
       run: npm run build --if-present
 
     - name: 📤 Deploy to Server via SSH
-      uses: easingthemes/ssh-deploy@v4
+      uses: easingthemes/ssh-deploy@v4.1.4
       env:
         SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
-        ARGS: "-rltgoDzvO --delete"
+        ARGS: "-rltgoDzvO --delete --exclude='node_modules' --exclude='.git'"
         SOURCE: "."
         REMOTE_HOST: ${{ secrets.DEPLOY_HOST }}
         REMOTE_USER: ${{ secrets.DEPLOY_USER }}
         REMOTE_PORT: "22"
         TARGET: "/var/www/myapp"
-        EXCLUDE: "/dist/, /node_modules/, /.git/, /.github/"
+        EXCLUDE: "/dist/, /node_modules/, /.git/, /.github/, *.log"
 
     - name: 🔄 Restart application
-      uses: appleboy/ssh-action@master
+      uses: appleboy/ssh-action@v1.0.3
       with:
         host: ${{ secrets.DEPLOY_HOST }}
         username: ${{ secrets.DEPLOY_USER }}
         key: ${{ secrets.DEPLOY_SSH_KEY }}
         script: |
           cd /var/www/myapp
+          echo "📦 Installing dependencies..."
           npm install --production
+          echo "🔄 Restarting application..."
           pm2 restart myapp
           pm2 save
           echo "✅ Deployment completed at $(date)"
+          echo "📊 Service status:"
+          pm2 status
 
     - name: 📢 Notify success
       if: success()
@@ -56,4 +86,7 @@ jobs:
 
     - name: ❌ Notify failure
       if: failure()
-      run: echo "❌ Deployment failed! Check logs."
+      run: |
+        echo "❌ Deployment failed!"
+        echo "Please check the logs and fix the issue."
+        exit 1
