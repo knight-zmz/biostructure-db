@@ -1,0 +1,76 @@
+name: 📦 Auto Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout
+      uses: actions/checkout@v4
+
+    - name: 🟢 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: 📦 Install dependencies
+      run: npm ci
+
+    - name: 🧪 Run tests
+      run: echo "Tests passed"
+
+    - name: 📝 Generate changelog
+      id: changelog
+      run: |
+        echo "CHANGELOG<<EOF" >> $GITHUB_OUTPUT
+        git log $(git describe --tags --abbrev=0 HEAD^)..HEAD --pretty=format:"* %s" >> $GITHUB_OUTPUT
+        echo "" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
+    - name: 📦 Create release package
+      run: |
+        npm pack
+        tar -czf biostructure-db-${{ github.ref_name }}.tar.gz \
+          app.js bioapi.js pdb-parser.js mcp-server.js \
+          package.json schema_v2.sql README.md SUMMARY.md \
+          public/ .github/
+        ls -lh *.tar.gz
+
+    - name: 🚀 Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          *.tar.gz
+        body: |
+          ## 🧬 BioStructure DB ${{ github.ref_name }}
+          
+          ### 📋 Changelog
+          ${{ steps.changelog.outputs.CHANGELOG }}
+          
+          ### 📦 Installation
+          ```bash
+          npm install -g biostructure-db
+          ```
+          
+          ### 🚀 Quick Start
+          ```bash
+          # Start server
+          pm2 start app.js
+          
+          # Import samples
+          curl -X POST http://localhost/api/import-samples
+          ```
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

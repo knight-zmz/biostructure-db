@@ -1,0 +1,59 @@
+name: 🚀 Auto Deploy to Server
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout
+      uses: actions/checkout@v4
+
+    - name: 🟢 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: 📦 Install dependencies
+      run: npm ci
+
+    - name: 🏗️ Build
+      run: npm run build --if-present
+
+    - name: 📤 Deploy to Server via SSH
+      uses: easingthemes/ssh-deploy@v4
+      env:
+        SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        ARGS: "-rltgoDzvO --delete"
+        SOURCE: "."
+        REMOTE_HOST: ${{ secrets.DEPLOY_HOST }}
+        REMOTE_USER: ${{ secrets.DEPLOY_USER }}
+        REMOTE_PORT: "22"
+        TARGET: "/var/www/myapp"
+        EXCLUDE: "/dist/, /node_modules/, /.git/, /.github/"
+
+    - name: 🔄 Restart application
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.DEPLOY_HOST }}
+        username: ${{ secrets.DEPLOY_USER }}
+        key: ${{ secrets.DEPLOY_SSH_KEY }}
+        script: |
+          cd /var/www/myapp
+          npm install --production
+          pm2 restart myapp
+          pm2 save
+          echo "✅ Deployment completed at $(date)"
+
+    - name: 📢 Notify success
+      if: success()
+      run: echo "✅ Deployment successful!"
+
+    - name: ❌ Notify failure
+      if: failure()
+      run: echo "❌ Deployment failed! Check logs."

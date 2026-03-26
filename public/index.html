@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🧬 BioStructure DB - 生物结构数据库</title>
+  <script src="https://3dmol.org/build/3Dmol-min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      min-height: 100vh;
+      color: #fff;
+    }
+    
+    /* 头部 */
+    header {
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      padding: 20px 40px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .logo {
+      font-size: 28px;
+      font-weight: bold;
+      background: linear-gradient(90deg, #00d9ff, #00ff88);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    
+    nav a {
+      color: #fff;
+      text-decoration: none;
+      margin-left: 30px;
+      font-size: 16px;
+      transition: color 0.3s;
+    }
+    
+    nav a:hover { color: #00d9ff; }
+    
+    /* 主容器 */
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+    
+    /* 统计卡片 */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-bottom: 40px;
+    }
+    
+    .stat-card {
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 15px;
+      padding: 25px;
+      text-align: center;
+      border: 1px solid rgba(255,255,255,0.1);
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+    
+    .stat-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 30px rgba(0,217,255,0.3);
+    }
+    
+    .stat-number {
+      font-size: 42px;
+      font-weight: bold;
+      background: linear-gradient(90deg, #00d9ff, #00ff88);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    
+    .stat-label {
+      font-size: 14px;
+      color: #aaa;
+      margin-top: 10px;
+    }
+    
+    /* 搜索框 */
+    .search-box {
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 15px;
+      padding: 30px;
+      margin-bottom: 40px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    .search-box input {
+      width: 100%;
+      padding: 15px 20px;
+      border: none;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      font-size: 16px;
+      outline: none;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    
+    .search-box input:focus {
+      border-color: #00d9ff;
+    }
+    
+    .search-box input::placeholder { color: #888; }
+    
+    /* 结构列表 */
+    .structure-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+      margin-bottom: 40px;
+    }
+    
+    .structure-card {
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 15px;
+      padding: 25px;
+      border: 1px solid rgba(255,255,255,0.1);
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    
+    .structure-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 30px rgba(0,217,255,0.3);
+      border-color: #00d9ff;
+    }
+    
+    .pdb-id {
+      font-size: 24px;
+      font-weight: bold;
+      color: #00d9ff;
+      margin-bottom: 10px;
+    }
+    
+    .structure-title {
+      font-size: 14px;
+      color: #ddd;
+      margin-bottom: 15px;
+      line-height: 1.5;
+    }
+    
+    .structure-meta {
+      display: flex;
+      gap: 15px;
+      font-size: 12px;
+      color: #888;
+    }
+    
+    .tag {
+      background: rgba(0,217,255,0.2);
+      color: #00d9ff;
+      padding: 4px 10px;
+      border-radius: 20px;
+    }
+    
+    /* 3D 查看器 */
+    .viewer-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.9);
+      z-index: 1000;
+      padding: 20px;
+    }
+    
+    .viewer-modal.active { display: flex; flex-direction: column; }
+    
+    .viewer-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    .viewer-header h2 { color: #00d9ff; }
+    
+    .close-btn {
+      background: none;
+      border: none;
+      color: #fff;
+      font-size: 32px;
+      cursor: pointer;
+      transition: color 0.3s;
+    }
+    
+    .close-btn:hover { color: #ff4757; }
+    
+    .viewer-container {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 350px;
+      gap: 20px;
+      padding: 20px;
+    }
+    
+    #gl {
+      background: #000;
+      border-radius: 15px;
+      position: relative;
+    }
+    
+    .info-panel {
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 15px;
+      padding: 20px;
+      overflow-y: auto;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    .info-panel h3 {
+      color: #00d9ff;
+      margin-bottom: 15px;
+      font-size: 18px;
+    }
+    
+    .info-item {
+      margin-bottom: 15px;
+      font-size: 14px;
+    }
+    
+    .info-label { color: #888; margin-bottom: 5px; }
+    .info-value { color: #fff; }
+    
+    .control-panel {
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    .control-btn {
+      background: rgba(0,217,255,0.2);
+      color: #00d9ff;
+      border: 1px solid #00d9ff;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-right: 10px;
+      margin-bottom: 10px;
+      transition: all 0.3s;
+    }
+    
+    .control-btn:hover {
+      background: #00d9ff;
+      color: #000;
+    }
+    
+    .control-btn.active {
+      background: #00d9ff;
+      color: #000;
+    }
+    
+    /* 加载动画 */
+    .loading {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 400px;
+      font-size: 18px;
+      color: #00d9ff;
+    }
+    
+    .loading::after {
+      content: '';
+      animation: dots 1.5s infinite;
+    }
+    
+    @keyframes dots {
+      0%, 20% { content: '.'; }
+      40% { content: '..'; }
+      60%, 100% { content: '...'; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">🧬 BioStructure DB</div>
+    <nav>
+      <a href="#" onclick="showSection('home')">首页</a>
+      <a href="#" onclick="showSection('search')">高级搜索</a>
+      <a href="#" onclick="showSection('ligands')">配体</a>
+      <a href="#" onclick="alert('参考 PDB + UniProt + Pfam 设计\n\n功能开发中...')">关于</a>
+    </nav>
+  </header>
+  
+  <!-- 高级搜索面板 -->
+  <div class="container" id="searchPanel" style="display:none;">
+    <div class="search-box">
+      <h2 style="color: #00d9ff; margin-bottom: 20px;">🔍 高级搜索</h2>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+        <input type="text" id="geneSearch" placeholder="基因名 (如：TP53, BRCA1)" style="padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.1); color: #fff;">
+        <input type="text" id="organismSearch" placeholder="生物体 (如：Homo sapiens)" style="padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.1); color: #fff;">
+        <select id="methodSearch" style="padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.1); color: #fff;">
+          <option value="">所有实验方法</option>
+          <option value="X-RAY">X-Ray 晶体学</option>
+          <option value="NMR">NMR</option>
+          <option value="EM">冷冻电镜</option>
+        </select>
+        <input type="number" id="resSearch" placeholder="最大分辨率 (Å)" step="0.1" style="padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.1); color: #fff;">
+      </div>
+      <button class="control-btn" onclick="advancedSearch()" style="margin-top: 15px; width: 100%;">搜索</button>
+      <div id="searchResults" style="margin-top: 20px;"></div>
+    </div>
+  </div>
+  
+  <div class="container">
+    <!-- 统计卡片 -->
+    <div class="stats" id="stats"></div>
+    
+    <!-- 搜索框和导入 -->
+    <div class="search-box">
+      <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+        <input type="text" id="searchInput" placeholder="搜索 PDB ID、结构名称..." onkeyup="searchStructures()" style="flex: 1;">
+        <button class="control-btn" onclick="showImportModal()" style="margin: 0;">📥 导入 PDB</button>
+        <button class="control-btn" onclick="importSamples()" style="margin: 0;">🎲 导入示例</button>
+      </div>
+      <input type="text" id="pdbIdInput" placeholder="输入 PDB ID (如：1CRN, 7ZNT) 并回车导入" onkeydown="if(event.key==='Enter') importPDB()" style="width: 100%; margin-top: 10px;">
+    </div>
+    
+    <!-- 导入模态框 -->
+    <div class="viewer-modal" id="importModal" style="background: rgba(0,0,0,0.7);">
+      <div style="background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border-radius: 15px; padding: 40px; max-width: 500px; margin: auto; border: 1px solid rgba(255,255,255,0.2);">
+        <h2 style="color: #00d9ff; margin-bottom: 20px;">📥 从 RCSB PDB 导入</h2>
+        <p style="color: #aaa; margin-bottom: 20px;">输入 PDB ID 从 RCSB 数据库导入真实蛋白质结构</p>
+        <input type="text" id="importPdbId" placeholder="PDB ID (例如：1CRN, 7ZNT, 6VXX)" style="width: 100%; padding: 15px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.1); color: #fff; font-size: 16px; margin-bottom: 20px;">
+        <div style="display: flex; gap: 10px;">
+          <button class="control-btn" onclick="importPDB()" style="flex: 1;">导入</button>
+          <button class="control-btn" onclick="document.getElementById('importModal').classList.remove('active')" style="background: transparent;">取消</button>
+        </div>
+        <div id="importStatus" style="margin-top: 20px; color: #888; font-size: 14px;"></div>
+      </div>
+    </div>
+    
+    <!-- 结构列表 -->
+    <div class="structure-list" id="structureList"></div>
+  </div>
+  
+  <!-- 3D 查看器 -->
+  <div class="viewer-modal" id="viewerModal">
+    <div class="viewer-header">
+      <h2 id="viewerTitle">3D 结构查看</h2>
+      <button class="close-btn" onclick="closeViewer()">×</button>
+    </div>
+    <div class="viewer-container">
+      <div id="gl"></div>
+      <div class="info-panel" id="infoPanel"></div>
+    </div>
+  </div>
+  
+  <script>
+    let viewer = null;
+    let currentPdbId = null;
+    
+    // 加载统计数据
+    async function loadStats() {
+      const res = await fetch('/api/stats');
+      const data = await res.json();
+      if (data.success) {
+        document.getElementById('stats').innerHTML = `
+          <div class="stat-card">
+            <div class="stat-number">${data.data.totalStructures}</div>
+            <div class="stat-label">结构总数</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number">${data.data.totalAtoms}</div>
+            <div class="stat-label">原子总数</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number">${data.data.methods.length}</div>
+            <div class="stat-label">实验方法</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number">13.23</div>
+            <div class="stat-label">PostgreSQL 版本</div>
+          </div>
+        `;
+      }
+    }
+    
+    // 加载结构列表
+    async function loadStructures() {
+      const res = await fetch('/api/structures');
+      const data = await res.json();
+      if (data.success) {
+        const html = data.data.map(s => `
+          <div class="structure-card" onclick="openViewer('${s.pdb_id}')">
+            <div class="pdb-id">${s.pdb_id}</div>
+            <div class="structure-title">${s.title}</div>
+            <div class="structure-meta">
+              <span class="tag">${s.method || 'N/A'}</span>
+              <span>${s.resolution ? s.resolution + ' Å' : ''}</span>
+              <span>${s.atom_count} 原子</span>
+            </div>
+          </div>
+        `).join('');
+        document.getElementById('structureList').innerHTML = html;
+      }
+    }
+    
+    // 搜索功能
+    async function searchStructures() {
+      const q = document.getElementById('searchInput').value;
+      if (!q) {
+        loadStructures();
+        return;
+      }
+      const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+      const data = await res.json();
+      if (data.success) {
+        const html = data.data.map(s => `
+          <div class="structure-card" onclick="openViewer('${s.pdb_id}')">
+            <div class="pdb-id">${s.pdb_id}</div>
+            <div class="structure-title">${s.title}</div>
+            <div class="structure-meta">
+              <span class="tag">${s.method || 'N/A'}</span>
+              <span>${s.resolution ? s.resolution + ' Å' : ''}</span>
+            </div>
+          </div>
+        `).join('');
+        document.getElementById('structureList').innerHTML = html;
+      }
+    }
+    
+    // 打开 3D 查看器
+    async function openViewer(pdbId) {
+      currentPdbId = pdbId;
+      document.getElementById('viewerModal').classList.add('active');
+      document.getElementById('viewerTitle').innerText = `${pdbId} - 3D 结构查看`;
+      
+      // 初始化 3D 查看器
+      const element = document.getElementById('gl');
+      element.innerHTML = '<div class="loading">加载中</div>';
+      
+      viewer = $3Dmol.createGLViewer(element, {
+        backgroundColor: 'black',
+        disableHelpers: false
+      });
+      
+      // 加载结构详情
+      const res = await fetch(`/api/structures/${pdbId}`);
+      const data = await res.json();
+      
+      if (data.success) {
+        const s = data.data;
+        document.getElementById('infoPanel').innerHTML = `
+          <h3>结构信息</h3>
+          <div class="info-item">
+            <div class="info-label">标题</div>
+            <div class="info-value">${s.title}</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">分辨率</div>
+            <div class="info-value">${s.resolution || 'N/A'} Å</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">实验方法</div>
+            <div class="info-value">${s.method || 'N/A'}</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">生物体</div>
+            <div class="info-value">${s.organism || 'N/A'}</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">提交日期</div>
+            <div class="info-value">${s.deposit_date || 'N/A'}</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">作者</div>
+            <div class="info-value">${s.authors.map(a => a.name).join(', ')}</div>
+          </div>
+          
+          <div class="control-panel">
+            <h3>显示样式</h3>
+            <button class="control-btn active" onclick="setStyle('cartoon')">卡通</button>
+            <button class="control-btn" onclick="setStyle('stick')">棍状</button>
+            <button class="control-btn" onclick="setStyle('sphere')">球棍</button>
+            <button class="control-btn" onclick="setStyle('surface')">表面</button>
+          </div>
+        `;
+        
+        // 加载原子坐标并渲染
+        loadAndRenderAtoms(pdbId);
+      }
+    }
+    
+    // 加载并渲染原子
+    async function loadAndRenderAtoms(pdbId) {
+      const res = await fetch(`/api/structures/${pdbId}/atoms`);
+      const data = await res.json();
+      
+      if (data.success && data.data.length > 0) {
+        // 转换为 PDB 格式
+        let pdbData = '';
+        data.data.forEach(atom => {
+          pdbData += `ATOM  ${String(atom.atom_id).padStart(5)}  ${atom.atom_name.padStart(4)} ${atom.residue_name.padStart(3)} ${atom.chain_letter}${String(atom.residue_num).padStart(4)}    ${String(atom.x_coord).padStart(8, ' ').slice(0,8)}${String(atom.y_coord).padStart(8, ' ').slice(0,8)}${String(atom.z_coord).padStart(8, ' ').slice(0,8)}  1.00  0.00           ${atom.element || 'C'}\n`;
+        });
+        
+        viewer.clear();
+        viewer.addModel(pdbData, "pdb");
+        viewer.setStyle({}, {cartoon: {color: 'spectrum'}});
+        viewer.zoomTo();
+        viewer.render();
+      } else {
+        document.getElementById('gl').innerHTML = '<div class="loading" style="color:#888">暂无原子坐标数据</div>';
+      }
+    }
+    
+    // 切换显示样式
+    function setStyle(style) {
+      document.querySelectorAll('.control-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+      
+      const styles = {
+        cartoon: {cartoon: {color: 'spectrum'}},
+        stick: {stick: {radius: 0.15, color: 'spectrum'}},
+        sphere: {sphere: {scale: 0.3, color: 'spectrum'}},
+        surface: {surface: {color: 'spectrum', opacity: 0.8}}
+      };
+      
+      viewer.clear();
+      loadAndRenderAtoms(currentPdbId).then(() => {
+        viewer.setStyle({}, styles[style]);
+        viewer.render();
+      });
+    }
+    
+    // 关闭查看器
+    function closeViewer() {
+      document.getElementById('viewerModal').classList.remove('active');
+      if (viewer) {
+        viewer.clear();
+        viewer = null;
+      }
+    }
+    
+    // 导入功能
+    function showImportModal() {
+      document.getElementById('importModal').classList.add('active');
+    }
+    
+    async function importPDB() {
+      const pdbId = document.getElementById('importPdbId').value.trim().toUpperCase();
+      const status = document.getElementById('importStatus');
+      
+      if (!pdbId) {
+        status.innerHTML = '<span style="color: #ff4757">请输入 PDB ID</span>';
+        return;
+      }
+      
+      status.innerHTML = '<span style="color: #00d9ff">正在从 RCSB 下载...</span>';
+      
+      try {
+        const res = await fetch(`/api/import/${pdbId}`, { method: 'POST' });
+        const data = await res.json();
+        
+        if (data.success) {
+          status.innerHTML = `<span style="color: #00ff88">✅ 导入成功！${data.data.atomsImported}/${data.data.totalAtoms} 原子</span>`;
+          setTimeout(() => {
+            document.getElementById('importModal').classList.remove('active');
+            loadStats();
+            loadStructures();
+          }, 2000);
+        } else {
+          status.innerHTML = `<span style="color: #ff4757">❌ 失败：${data.error}</span>`;
+        }
+      } catch (err) {
+        status.innerHTML = `<span style="color: #ff4757">❌ 网络错误</span>`;
+      }
+    }
+    
+    async function importSamples() {
+      const status = document.getElementById('importStatus');
+      if (!confirm('确定要导入 5 个示例结构吗？')) return;
+      
+      try {
+        const res = await fetch('/api/import-samples', { method: 'POST' });
+        const data = await res.json();
+        
+        if (data.success) {
+          alert(`✅ 导入完成！\n${data.data.map(d => `${d.pdbId}: ${d.status} (${d.atoms} 原子)`).join('\n')}`);
+          loadStats();
+          loadStructures();
+        }
+      } catch (err) {
+        alert('导入失败：' + err.message);
+      }
+    }
+    
+    // 高级搜索
+    async function advancedSearch() {
+      const gene = document.getElementById('geneSearch').value;
+      const organism = document.getElementById('organismSearch').value;
+      const method = document.getElementById('methodSearch').value;
+      const res = document.getElementById('resSearch').value;
+      
+      let url = '/api/bio/search/structure?';
+      if (gene) url += `&gene=${encodeURIComponent(gene)}`;
+      if (organism) url += `&organism=${encodeURIComponent(organism)}`;
+      if (method) url += `&method=${encodeURIComponent(method)}`;
+      if (res) url += `&maxRes=${res}`;
+      
+      const response = await fetch(url);
+      const data = await response.json();
+      
+      const resultsDiv = document.getElementById('searchResults');
+      if (data.success && data.data.length > 0) {
+        resultsDiv.innerHTML = `<h3 style="color: #00ff88; margin-bottom: 15px;">找到 ${data.data.length} 个结构</h3>` +
+          data.data.map(s => `
+            <div class="structure-card" onclick="openViewer('${s.pdb_id}')" style="margin-bottom: 10px;">
+              <div class="pdb-id">${s.pdb_id}</div>
+              <div class="structure-title">${s.title}</div>
+              <div class="structure-meta">
+                <span class="tag">${s.method || 'N/A'}</span>
+                <span>${s.resolution ? s.resolution + ' Å' : ''}</span>
+                ${s.gene_name ? `<span>🧬 ${s.gene_name}</span>` : ''}
+                ${s.organism_scientific_name ? `<span>🦠 ${s.organism_scientific_name}</span>` : ''}
+              </div>
+            </div>
+          `).join('');
+      } else {
+        resultsDiv.innerHTML = '<p style="color: #888;">未找到结果</p>';
+      }
+    }
+    
+    // 切换面板
+    function showSection(section) {
+      document.getElementById('searchPanel').style.display = section === 'search' ? 'block' : 'none';
+      document.querySelector('.container:first-of-type').style.display = section === 'home' ? 'block' : 'none';
+    }
+    
+    // 初始化
+    loadStats();
+    loadStructures();
+  </script>
+</body>
+</html>
