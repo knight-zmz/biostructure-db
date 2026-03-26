@@ -111,7 +111,7 @@ fi
 # 7. 备份数据库
 echo ""
 echo "7️⃣ 数据库备份..."
-backup_dir="/var/backups/myapp"
+backup_dir="/home/admin/backups/myapp"
 mkdir -p "$backup_dir"
 backup_file="$backup_dir/backup-$(date +%Y%m%d-%H%M%S).sql"
 if sudo -u postgres pg_dump myapp > "$backup_file" 2>/dev/null; then
