@@ -349,3 +349,50 @@ router.get('/activesite/:pdbId', async (req, res) => {
 });
 
 module.exports = router;
+
+/**
+ * 11. 获取统计信息
+ */
+router.get('/stats', async (req, res) => {
+  try {
+    const structures = await pool.query('SELECT COUNT(*) as "totalStructures" FROM structures');
+    const atoms = await pool.query('SELECT COUNT(*) as "totalAtoms" FROM atoms');
+    const methods = await pool.query('SELECT method, COUNT(*) as count FROM structures WHERE method IS NOT NULL GROUP BY method');
+    
+    res.json({
+      success: true,
+      data: {
+        totalStructures: parseInt(structures.rows[0].totalstructures),
+        totalAtoms: parseInt(atoms.rows[0].totalatoms),
+        methods: methods.rows
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * 12. 获取详细统计信息
+ */
+router.get('/stats/detailed', async (req, res) => {
+  try {
+    const structures = await pool.query('SELECT COUNT(*) as "totalStructures" FROM structures');
+    const atoms = await pool.query('SELECT COUNT(*) as "totalAtoms" FROM atoms');
+    const methods = await pool.query('SELECT method, COUNT(*) as count FROM structures WHERE method IS NOT NULL GROUP BY method');
+    const organisms = await pool.query('SELECT organism_scientific_name, COUNT(*) as count FROM structures WHERE organism_scientific_name IS NOT NULL GROUP BY organism_scientific_name ORDER BY count DESC LIMIT 10');
+    
+    res.json({
+      success: true,
+      data: {
+        totalStructures: parseInt(structures.rows[0].totalstructures),
+        totalAtoms: parseInt(atoms.rows[0].totalatoms),
+        methods: methods.rows,
+        topOrganisms: organisms.rows,
+        lastUpdated: new Date().toISOString()
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
