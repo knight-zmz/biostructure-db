@@ -439,184 +439,6 @@
         font-size: 32px;
       }
     }
-  
-    /* 详情弹窗 */
-    .modal-overlay {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.7);
-      backdrop-filter: blur(5px);
-      z-index: 2000;
-      display: none;
-      justify-content: center;
-      align-items: flex-start;
-      padding: 40px 20px;
-      overflow-y: auto;
-    }
-    .modal-overlay.active { display: flex; }
-    .modal-content {
-      background: var(--bg-light);
-      border-radius: 16px;
-      width: 100%;
-      max-width: 900px;
-      border: 1px solid rgba(255,255,255,0.15);
-      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-      animation: modalSlideIn 0.3s ease-out;
-    }
-    @keyframes modalSlideIn {
-      from { opacity: 0; transform: translateY(30px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    .modal-header {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 20px 25px;
-      border-bottom: 1px solid rgba(255,255,255,0.1);
-    }
-    .modal-header h2 { font-size: 22px; color: var(--accent-color); }
-    .modal-close { background: none; border: none; color: white; font-size: 24px; cursor: pointer; opacity: 0.7; transition: opacity 0.3s; }
-    .modal-close:hover { opacity: 1; }
-    .modal-tabs { display: flex; gap: 0; border-bottom: 1px solid rgba(255,255,255,0.1); }
-    .modal-tab {
-      padding: 12px 24px; background: none; border: none; color: var(--text-secondary);
-      cursor: pointer; font-weight: 500; border-bottom: 2px solid transparent; transition: all 0.3s;
-    }
-    .modal-tab:hover, .modal-tab.active { color: var(--accent-color); border-bottom-color: var(--accent-color); }
-    .modal-body { padding: 25px; max-height: 60vh; overflow-y: auto; }
-    .modal-tab-content { display: none; }
-    .modal-tab-content.active { display: block; }
-    .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-    .detail-item { padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px; }
-    .detail-label { color: var(--text-secondary); font-size: 12px; margin-bottom: 4px; text-transform: uppercase; }
-    .detail-value { font-size: 16px; font-weight: 500; }
-    .sequence-viewer { font-family: 'Courier New', monospace; font-size: 13px; line-height: 1.8; word-break: break-all; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; max-height: 300px; overflow-y: auto; }
-    .seq-pos { color: var(--text-secondary); font-size: 11px; margin-right: 8px; }
-    .ligand-table { width: 100%; border-collapse: collapse; }
-    .ligand-table th, .ligand-table td { padding: 10px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.08); }
-    .ligand-table th { color: var(--accent-color); font-size: 12px; text-transform: uppercase; }
-    .ss-helix { color: #ff6b6b; }
-    .ss-sheet { color: #4ecdc4; }
-    
-    /* 分页控件 */
-    .pagination {
-      display: flex; justify-content: center; align-items: center; gap: 10px;
-      margin-top: 30px; padding: 20px;
-    }
-    .page-btn {
-      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
-      color: white; padding: 8px 16px; border-radius: 6px; cursor: pointer; transition: all 0.3s;
-    }
-    .page-btn:hover:not(:disabled) { background: var(--accent-color); color: var(--bg-dark); }
-    .page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-    .page-btn.active { background: var(--accent-color); color: var(--bg-dark); font-weight: 600; }
-    .page-info { color: var(--text-secondary); font-size: 14px; }
-    
-    /* 筛选/排序栏 */
-    .filter-bar {
-      display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; align-items: center;
-    }
-    .filter-select {
-      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
-      color: white; padding: 8px 14px; border-radius: 6px; font-size: 14px; outline: none;
-    }
-    .filter-select option { background: var(--bg-dark); }
-    .filter-label { color: var(--text-secondary); font-size: 13px; }
-
-
-    /* 骨架屏加载 */
-    .skeleton {
-      background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 75%);
-      background-size: 200% 100%;
-      animation: shimmer 1.5s infinite;
-      border-radius: 8px;
-    }
-    @keyframes shimmer {
-      0% { background-position: -200% 0; }
-      100% { background-position: 200% 0; }
-    }
-    .skeleton-card { height: 120px; border-radius: 15px; }
-    .skeleton-line { height: 16px; margin-bottom: 8px; }
-    .skeleton-line.w60 { width: 60%; }
-    .skeleton-line.w80 { width: 80%; }
-    .skeleton-line.w40 { width: 40%; }
-
-    /* 搜索自动补全 */
-    .suggest-dropdown {
-      position: absolute;
-      top: 100%;
-      left: 0; right: 0;
-      background: var(--bg-light);
-      border: 1px solid rgba(255,255,255,0.15);
-      border-radius: 0 0 12px 12px;
-      max-height: 320px;
-      overflow-y: auto;
-      z-index: 100;
-      display: none;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
-    }
-    .suggest-dropdown.active { display: block; }
-    .suggest-item {
-      padding: 12px 18px;
-      cursor: pointer;
-      transition: background 0.2s;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid rgba(255,255,255,0.05);
-    }
-    .suggest-item:hover { background: rgba(0,217,255,0.1); }
-    .suggest-pdb { color: var(--accent-color); font-weight: 700; font-family: monospace; font-size: 15px; }
-    .suggest-title { color: var(--text-secondary); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 60%; }
-    .suggest-gene { color: var(--success); font-size: 12px; background: rgba(0,255,136,0.1); padding: 2px 8px; border-radius: 10px; }
-
-    /* 最近结构区 */
-    .recent-section { margin-bottom: 40px; }
-    .recent-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 16px;
-    }
-    .recent-card {
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 12px;
-      padding: 18px;
-      cursor: pointer;
-      transition: all 0.3s;
-      position: relative;
-      overflow: hidden;
-    }
-    .recent-card::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0;
-      width: 4px; height: 100%;
-      background: linear-gradient(180deg, var(--accent-color), var(--secondary-color));
-      opacity: 0;
-      transition: opacity 0.3s;
-    }
-    .recent-card:hover {
-      border-color: var(--accent-color);
-      transform: translateY(-3px);
-      box-shadow: 0 8px 25px rgba(0,217,255,0.15);
-    }
-    .recent-card:hover::before { opacity: 1; }
-    .recent-card .pdb-id { font-size: 20px; }
-    .recent-card .structure-title {
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-      font-size: 13px;
-    }
-    .recent-date { color: var(--text-secondary); font-size: 12px; margin-top: 8px; }
-
-    /* 数字滚动动画 */
-    @keyframes countUp {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    .stat-number { animation: countUp 0.6s ease-out; }
-
   </style>
 </head>
 <body>
@@ -649,15 +471,14 @@
           <button class="search-tab" onclick="setSearchType('gene')">基因</button>
           <button class="search-tab" onclick="setSearchType('ligand')">配体</button>
         </div>
-        <div class="search-box" style="position:relative;">
-          <input type="text" class="search-input" id="searchInput" autocomplete="off" placeholder="搜索 PDB ID、结构名称、基因名..." onkeyup="if(event.key==='Enter') search(); else if(event.key==='Escape') clearSearch();">
+        <div class="search-box">
+          <input type="text" class="search-input" id="searchInput" placeholder="搜索 PDB ID、结构名称、基因名..." onkeyup="if(event.key==='Enter') search(); else if(event.key==='Escape') clearSearch();">
           <button class="search-btn" onclick="search()">
             <i class="fas fa-search"></i> 搜索
           </button>
-          <button class="search-btn" onclick="clearSearch()" style="background:rgba(255,255,255,0.1);color:white);">
+          <button class="search-btn" onclick="clearSearch()" style="background:rgba(255,255,255,0.1);color:white;">
             <i class="fas fa-times"></i> 清除
           </button>
-          <div class="suggest-dropdown" id="suggestDropdown"></div>
         </div>
       </div>
     </div>
@@ -668,14 +489,6 @@
     <!-- 统计卡片 -->
     <div class="stats-grid" id="stats"></div>
     
-    <!-- 最近沉积 -->
-    <div class="recent-section" id="recentSection">
-      <h2 style="margin-bottom:20px;font-size:24px;">
-        <i class="fas fa-clock"></i> 最近沉积
-      </h2>
-      <div class="recent-grid" id="recentGrid"></div>
-    </div>
-    
     <!-- 内容区域 -->
     <div class="content-grid">
       <!-- 结构列表 -->
@@ -683,26 +496,7 @@
         <h2 style="margin-bottom: 20px; font-size: 24px;">
           <i class="fas fa-cube"></i> 结构列表
         </h2>
-        <div class="filter-bar">
-          <span class="filter-label"><i class="fas fa-filter"></i> 方法:</span>
-          <select class="filter-select" id="methodFilter" onchange="applyFilters()">
-            <option value="">全部</option>
-            <option value="X-RAY DIFFRACTION">X-Ray</option>
-            <option value="ELECTRON MICROSCOPY">EM</option>
-            <option value="SOLUTION NMR">NMR</option>
-          </select>
-          <span class="filter-label"><i class="fas fa-sort"></i> 排序:</span>
-          <select class="filter-select" id="sortFilter" onchange="applyFilters()">
-            <option value="pdb_id">PDB ID</option>
-            <option value="resolution">分辨率</option>
-          </select>
-          <select class="filter-select" id="orderFilter" onchange="applyFilters()">
-            <option value="asc">升序</option>
-            <option value="desc">降序</option>
-          </select>
-        </div>
         <div class="structure-list" id="structureList"></div>
-        <div class="pagination" id="pagination"></div>
       </div>
       
       <!-- 3D 查看器 -->
@@ -792,41 +586,21 @@
               <div class="stat-label">独特配体</div>
             </div>
           `;
-          // Animate counters
-          animateCounter(document.getElementById('statStructures'), data.data.totalStructures);
-          animateCounter(document.getElementById('statAtoms'), data.data.totalAtoms || 0);
-          animateCounter(document.getElementById('statMethods'), data.data.methods.length);
-          document.getElementById('statLigands').textContent = data.data.uniqueLigands ?? '-';
         }
       } catch (err) {
         console.error('加载统计失败:', err);
       }
     }
     
-    let currentPage = 1;
-    let totalPages = 1;
-    let totalCount = 0;
-
-    // 加载结构列表（支持分页和筛选）
-    async function loadStructures(page = 1) {
-      currentPage = page;
-      const method = document.getElementById('methodFilter')?.value || '';
-      const sort = document.getElementById('sortFilter')?.value || 'pdb_id';
-      const order = document.getElementById('orderFilter')?.value || 'asc';
-
+    // 加载结构列表
+    async function loadStructures() {
       try {
-        let url = `/api/structures?page=${page}&limit=20&sort=${sort}&order=${order}`;
-        if (method) url += `&method=${encodeURIComponent(method)}`;
-
-        const res = await fetch(url);
+        const res = await fetch('/api/structures');
         const data = await res.json();
-
+        
         if (data.success) {
-          totalPages = data.pagination.totalPages;
-          totalCount = data.pagination.total;
-
           const html = data.data.map(s => `
-            <div class="structure-item" onclick="openDetail('${s.pdb_id}')">
+            <div class="structure-item" onclick="openViewer('${s.pdb_id}')">
               <div class="structure-header">
                 <div class="pdb-id">${s.pdb_id}</div>
                 <span class="tag resolution">${s.resolution ? s.resolution + ' Å' : 'N/A'}</span>
@@ -840,34 +614,10 @@
             </div>
           `).join('');
           document.getElementById('structureList').innerHTML = html;
-          renderPagination();
         }
       } catch (err) {
         console.error('加载结构列表失败:', err);
       }
-    }
-
-    // 渲染分页控件
-    function renderPagination() {
-      const el = document.getElementById('pagination');
-      if (totalPages <= 1) { el.innerHTML = ''; return; }
-
-      let html = `<button class="page-btn" onclick="loadStructures(${currentPage - 1})" ${currentPage <= 1 ? 'disabled' : ''}><i class="fas fa-chevron-left"></i></button>`;
-      const start = Math.max(1, currentPage - 2);
-      const end = Math.min(totalPages, currentPage + 2);
-      if (start > 1) html += `<button class="page-btn" onclick="loadStructures(1)">1</button>${start > 2 ? '<span style="color:var(--text-secondary)">...</span>' : ''}`;
-      for (let i = start; i <= end; i++) {
-        html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="loadStructures(${i})">${i}</button>`;
-      }
-      if (end < totalPages) html += `${end < totalPages - 1 ? '<span style="color:var(--text-secondary)">...</span>' : ''}<button class="page-btn" onclick="loadStructures(${totalPages})">${totalPages}</button>`;
-      html += `<button class="page-btn" onclick="loadStructures(${currentPage + 1})" ${currentPage >= totalPages ? 'disabled' : ''}><i class="fas fa-chevron-right"></i></button>`;
-      html += `<span class="page-info">共 ${totalCount} 条</span>`;
-      el.innerHTML = html;
-    }
-
-    // 应用筛选
-    function applyFilters() {
-      loadStructures(1);
     }
     
     // 搜索功能
@@ -1194,273 +944,16 @@
       console.log('切换到:', section);
     }
     
-    
-    // 打开详情弹窗
-    async function openDetail(pdbId) {
-      document.getElementById('detailModal').classList.add('active');
-      document.getElementById('modalTitle').textContent = `${pdbId} - 结构详情`;
-      // Reset tabs
-      document.querySelectorAll('.modal-tab').forEach((t,i) => t.classList.toggle('active', i===0));
-      document.querySelectorAll('.modal-tab-content').forEach((c,i) => c.classList.toggle('active', i===0));
-      loadDetailInfo(pdbId);
-      loadDetailSequence(pdbId);
-      loadDetailLigands(pdbId);
-      loadDetailSS(pdbId);
-      // Also open in 3D viewer
-      openViewer(pdbId);
-    }
-
-    function closeModal() {
-      document.getElementById('detailModal').classList.remove('active');
-    }
-
-    function switchModalTab(tab, btn) {
-      document.querySelectorAll('.modal-tab').forEach(t => t.classList.remove('active'));
-      document.querySelectorAll('.modal-tab-content').forEach(c => c.classList.remove('active'));
-      btn.classList.add('active');
-      document.getElementById('tab-' + tab).classList.add('active');
-    }
-
-    async function loadDetailInfo(pdbId) {
-      try {
-        const res = await fetch(`/api/structures/${pdbId}`);
-        const data = await res.json();
-        if (!data.success) { document.getElementById('detailInfoContent').innerHTML = '<p style="color:var(--danger)">加载失败</p>'; return; }
-        const s = data.data;
-        const authors = (s.authors || []).map(a => a.name).join(', ');
-        const ligandCount = (s.ligands || []).length;
-        const seqCount = (s.sequences || []).length;
-        document.getElementById('detailInfoContent').innerHTML = `
-          <div class="detail-grid">
-            <div class="detail-item"><div class="detail-label">PDB ID</div><div class="detail-value">${s.pdb_id}</div></div>
-            <div class="detail-item"><div class="detail-label">实验方法</div><div class="detail-value">${s.method || 'N/A'}</div></div>
-            <div class="detail-item"><div class="detail-label">分辨率</div><div class="detail-value">${s.resolution ? s.resolution + ' Å' : 'N/A'}</div></div>
-            <div class="detail-item"><div class="detail-label">生物体</div><div class="detail-value">${s.organism_scientific_name || s.organism || 'N/A'}</div></div>
-            <div class="detail-item"><div class="detail-label">基因名</div><div class="detail-value">${s.gene_name || 'N/A'}</div></div>
-            <div class="detail-item"><div class="detail-label">分子量</div><div class="detail-value">${s.molecule_weight ? s.molecule_weight.toFixed(1) + ' Da' : 'N/A'}</div></div>
-            <div class="detail-item"><div class="detail-label">沉积日期</div><div class="detail-value">${s.deposit_date || 'N/A'}</div></div>
-            <div class="detail-item"><div class="detail-label">配体数</div><div class="detail-value">${ligandCount}</div></div>
-            <div class="detail-item" style="grid-column:1/-1"><div class="detail-label">标题</div><div class="detail-value">${s.title}</div></div>
-            <div class="detail-item" style="grid-column:1/-1"><div class="detail-label">作者</div><div class="detail-value">${authors || 'N/A'}</div></div>
-            ${s.description ? `<div class="detail-item" style="grid-column:1/-1"><div class="detail-label">描述</div><div class="detail-value">${s.description}</div></div>` : ''}
-          </div>
-        `;
-      } catch (err) {
-        document.getElementById('detailInfoContent').innerHTML = '<p style="color:var(--danger)">请求失败</p>';
-      }
-    }
-
-    async function loadDetailSequence(pdbId) {
-      try {
-        const res = await fetch(`/api/structures/${pdbId}`);
-        const data = await res.json();
-        if (!data.success) return;
-        const seqs = data.data.sequences || [];
-        if (seqs.length === 0) {
-          document.getElementById('detailSequenceContent').innerHTML = '<p style="color:var(--text-secondary)">暂无序列数据</p>';
-          return;
-        }
-        const html = seqs.map(s => {
-          const threeToOne = {'ALA':'A','ARG':'R','ASN':'N','ASP':'D','CYS':'C','GLU':'E','GLN':'Q','GLY':'G','HIS':'H','ILE':'I','LEU':'L','LYS':'K','MET':'M','PHE':'F','PRO':'P','SER':'S','THR':'T','TRP':'W','TYR':'Y','VAL':'V'};
-          let seq1 = '';
-          if (s.sequence) {
-            for (let i = 0; i < s.sequence.length; i += 3) {
-              const aa3 = s.sequence.substring(i, i + 3);
-              seq1 += threeToOne[aa3] || 'X';
-            }
-          }
-          return `<div style="margin-bottom:15px">
-            <div style="margin-bottom:5px"><span class="tag">Chain ${s.chain_id}</span> <span class="tag">${s.length || seq1.length} residues</span></div>
-            <div class="sequence-viewer"><span class="seq-pos">1</span>${seq1.match(/.{1,60}/g)?.join('\n<span class="seq-pos"></span>') || 'N/A'}</div>
-          </div>`;
-        }).join('');
-        document.getElementById('detailSequenceContent').innerHTML = html;
-      } catch (err) {
-        document.getElementById('detailSequenceContent').innerHTML = '<p style="color:var(--danger)">加载失败</p>';
-      }
-    }
-
-    async function loadDetailLigands(pdbId) {
-      try {
-        const res = await fetch(`/api/structures/${pdbId}`);
-        const data = await res.json();
-        if (!data.success) return;
-        const ligands = data.data.ligands || [];
-        if (ligands.length === 0) {
-          document.getElementById('detailLigandsContent').innerHTML = '<p style="color:var(--text-secondary)">该结构无配体</p>';
-          return;
-        }
-        document.getElementById('detailLigandsContent').innerHTML = `
-          <table class="ligand-table">
-            <thead><tr><th>名称</th><th>分子式</th><th>分子量</th><th>SMILES</th></tr></thead>
-            <tbody>${ligands.map(l => `<tr><td><strong>${l.ligand_name}</strong></td><td>${l.formula || '-'}</td><td>${l.weight ? l.weight.toFixed(2) : '-'}</td><td style="font-family:monospace;font-size:12px;max-width:300px;overflow:hidden;text-overflow:ellipsis">${l.smiles || '-'}</td></tr>`).join('')}</tbody>
-          </table>`;
-      } catch (err) {
-        document.getElementById('detailLigandsContent').innerHTML = '<p style="color:var(--danger)">加载失败</p>';
-      }
-    }
-
-    async function loadDetailSS(pdbId) {
-      try {
-        const res = await fetch(`/api/bio/secondary/${pdbId}`);
-        const data = await res.json();
-        if (!data.success || !data.data.length) {
-          document.getElementById('detailSSContent').innerHTML = '<p style="color:var(--text-secondary)">暂无二级结构数据</p>';
-          return;
-        }
-        document.getElementById('detailSSContent').innerHTML = `
-          <table class="ligand-table">
-            <thead><tr><th>类型</th><th>链</th><th>起始</th><th>终止</th><th>描述</th></tr></thead>
-            <tbody>${data.data.map(ss => `<tr><td class="${ss.ss_type === 'helix' ? 'ss-helix' : 'ss-sheet'}"><strong>${ss.ss_type}</strong></td><td>${ss.chain_letter}</td><td>${ss.start_residue}</td><td>${ss.end_residue}</td><td>${ss.description || '-'}</td></tr>`).join('')}</tbody>
-          </table>`;
-      } catch (err) {
-        document.getElementById('detailSSContent').innerHTML = '<p style="color:var(--danger)">加载失败</p>';
-      }
-    }
-
-    // 键盘快捷键
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') closeModal();
-    });
-
-
-    // 加载最近沉积的结构
-    async function loadRecent() {
-      try {
-        const res = await fetch('/api/structures/recent/list?limit=8');
-        const data = await res.json();
-        if (!data.success || !data.data.length) {
-          document.getElementById('recentSection').style.display = 'none';
-          return;
-        }
-        const html = data.data.map(s => `
-          <div class="recent-card" onclick="openDetail('${s.pdb_id}')">
-            <div class="pdb-id">${s.pdb_id}</div>
-            <div class="structure-title">${s.title || 'N/A'}</div>
-            <div class="structure-meta" style="margin-top:10px;">
-              <span class="tag method">${s.method || 'N/A'}</span>
-              ${s.resolution ? `<span class="tag resolution">${s.resolution} Å</span>` : ''}
-              ${s.gene_name ? `<span class="tag"><i class="fas fa-dna"></i> ${s.gene_name}</span>` : ''}
-            </div>
-            ${s.deposit_date ? `<div class="recent-date"><i class="far fa-calendar"></i> ${s.deposit_date}</div>` : ''}
-          </div>
-        `).join('');
-        document.getElementById('recentGrid').innerHTML = html;
-      } catch (err) {
-        console.warn('加载最近结构失败:', err);
-        document.getElementById('recentSection').style.display = 'none';
-      }
-    }
-
-    // 搜索自动补全
-    let suggestTimeout = null;
-    async function loadSuggestions(query) {
-      if (!query || query.length < 2) {
-        document.getElementById('suggestDropdown').classList.remove('active');
-        return;
-      }
-      try {
-        const res = await fetch('/api/search/suggest?q=' + encodeURIComponent(query) + '&limit=8');
-        const data = await res.json();
-        if (!data.success || !data.data.length) {
-          document.getElementById('suggestDropdown').classList.remove('active');
-          return;
-        }
-        const html = data.data.map(s => `
-          <div class="suggest-item" onclick="selectSuggestion('${s.pdb_id}')">
-            <div>
-              <span class="suggest-pdb">${s.pdb_id}</span>
-              ${s.gene_name ? `<span class="suggest-gene">${s.gene_name}</span>` : ''}
-            </div>
-            <span class="suggest-title">${s.title || ''}</span>
-          </div>
-        `).join('');
-        document.getElementById('suggestDropdown').innerHTML = html;
-        document.getElementById('suggestDropdown').classList.add('active');
-      } catch (err) {
-        document.getElementById('suggestDropdown').classList.remove('active');
-      }
-    }
-
-    function selectSuggestion(pdbId) {
-      document.getElementById('searchInput').value = pdbId;
-      document.getElementById('suggestDropdown').classList.remove('active');
-      search();
-    }
-
-    // 绑定搜索输入事件
-    document.getElementById('searchInput')?.addEventListener('input', function(e) {
-      clearTimeout(suggestTimeout);
-      suggestTimeout = setTimeout(() => loadSuggestions(e.target.value), 300);
-    });
-
-    // 点击外部关闭建议
-    document.addEventListener('click', function(e) {
-      if (!e.target.closest('.search-box')) {
-        document.getElementById('suggestDropdown')?.classList.remove('active');
-      }
-    });
-
-    // 数字动画
-    function animateCounter(element, target) {
-      const duration = 1200;
-      const start = performance.now();
-      const isNum = !isNaN(parseInt(target));
-      if (!isNum) { element.textContent = target; return; }
-      const end = parseInt(target);
-      function step(now) {
-        const progress = Math.min((now - start) / duration, 1);
-        const eased = 1 - Math.pow(1 - progress, 3);
-        element.textContent = Math.floor(eased * end).toLocaleString();
-        if (progress < 1) requestAnimationFrame(step);
-        else element.textContent = end.toLocaleString();
-      }
-      requestAnimationFrame(step);
-    }
-
     // 初始化
     document.addEventListener('DOMContentLoaded', async () => {
       await loadStats();
       await loadStructures();
       await initMolstarViewer();
-      loadRecent();
     });
     
     // 页面加载完成后立即执行
     loadStats();
     loadStructures();
-    loadRecent();
   </script>
-
-  <!-- 结构详情弹窗 -->
-  <div class="modal-overlay" id="detailModal" onclick="if(event.target===this)closeModal()">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2 id="modalTitle">结构详情</h2>
-        <button class="modal-close" onclick="closeModal()">&times;</button>
-      </div>
-      <div class="modal-tabs">
-        <button class="modal-tab active" onclick="switchModalTab('info',this)">基本信息</button>
-        <button class="modal-tab" onclick="switchModalTab('sequence',this)">序列</button>
-        <button class="modal-tab" onclick="switchModalTab('ligands',this)">配体</button>
-        <button class="modal-tab" onclick="switchModalTab('structure2d',this)">二级结构</button>
-      </div>
-      <div class="modal-body">
-        <div class="modal-tab-content active" id="tab-info">
-          <div id="detailInfoContent"><div class="loading">加载中</div></div>
-        </div>
-        <div class="modal-tab-content" id="tab-sequence">
-          <div id="detailSequenceContent"><div class="loading">加载中</div></div>
-        </div>
-        <div class="modal-tab-content" id="tab-ligands">
-          <div id="detailLigandsContent"><div class="loading">加载中</div></div>
-        </div>
-        <div class="modal-tab-content" id="tab-structure2d">
-          <div id="detailSSContent"><div class="loading">加载中</div></div>
-        </div>
-      </div>
-    </div>
-  </div>
-
 </body>
 </html>

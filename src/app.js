@@ -95,32 +95,93 @@ const cacheMiddleware = (ttl = 300) => async (req, res, next) => {
 
 // API 路由
 
-// 1. 获取所有结构列表 (带缓存)
+// 1. 获取所有结构列表 (带缓存 + 分页 + 筛选)
 app.get('/api/structures', cacheMiddleware(600), async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM structure_stats ORDER BY pdb_id');
-    res.json({ success: true, data: result.rows });
+    const { page = 1, limit = 20, method, sort = 'pdb_id', order = 'asc', minRes, maxRes } = req.query;
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+
+    let where = ['1=1'];
+    let params = [];
+    let paramIdx = 1;
+
+    if (method) {
+      where.push(`method = $${paramIdx++}`);
+      params.push(method);
+    }
+    if (minRes) {
+      where.push(`resolution >= $${paramIdx++}`);
+      params.push(parseFloat(minRes));
+    }
+    if (maxRes) {
+      where.push(`resolution <= $${paramIdx++}`);
+      params.push(parseFloat(maxRes));
+    }
+
+    const allowedSorts = ['pdb_id', 'resolution', 'method', 'deposit_date'];
+    const sortCol = allowedSorts.includes(sort) ? sort : 'pdb_id';
+    const sortOrder = order === 'desc' ? 'DESC' : 'ASC';
+    const nullsClause = sortCol === 'resolution' ? 'NULLS LAST' : '';
+
+    const countResult = await pool.query(
+      `SELECT COUNT(*) FROM structure_stats WHERE ${where.join(' AND ')}`,
+      params
+    );
+
+    params.push(parseInt(limit));
+    params.push(offset);
+
+    const result = await pool.query(
+      `SELECT * FROM structure_stats WHERE ${where.join(' AND ')} ORDER BY ${sortCol} ${sortOrder} ${nullsClause} LIMIT $${paramIdx++} OFFSET $${paramIdx}`,
+      params
+    );
+
+    res.json({
+      success: true,
+      data: result.rows,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total: parseInt(countResult.rows[0].count),
+        totalPages: Math.ceil(parseInt(countResult.rows[0].count) / parseInt(limit))
+      }
+    });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    console.error("Error fetching structures:", err);
+    res.status(500).json({ success: false, error: "Internal server error" });
   }
 });
 
-// 2. 获取单个结构详情 (带缓存)
+// 2. 获取单个结构详情 (带缓存 - 增强版含配体/序列/二级结构)
 app.get('/api/structures/:pdbId', cacheMiddleware(600), async (req, res) => {
   try {
     const { pdbId } = req.params;
     const structure = await pool.query('SELECT * FROM structures WHERE pdb_id = $1', [pdbId]);
+    if (structure.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'PDB ID not found' });
+    }
     const authors = await pool.query('SELECT name FROM authors WHERE pdb_id = $1 ORDER BY order_num', [pdbId]);
     const chains = await pool.query('SELECT * FROM chains WHERE pdb_id = $1', [pdbId]);
     const citations = await pool.query('SELECT * FROM citations WHERE pdb_id = $1', [pdbId]);
-    
+    const ligands = await pool.query('SELECT * FROM ligands WHERE pdb_id = $1', [pdbId]);
+    const sequences = await pool.query('SELECT * FROM sequence_index WHERE pdb_id = $1', [pdbId]);
+    const ss = await pool.query('SELECT * FROM secondary_structures WHERE pdb_id = $1', [pdbId]);
+    const atomStats = await pool.query(
+      'SELECT COUNT(*) as atom_count, MIN(x_coord) as min_x, MAX(x_coord) as max_x, MIN(y_coord) as min_y, MAX(y_coord) as max_y, MIN(z_coord) as min_z, MAX(z_coord) as max_z FROM atoms WHERE pdb_id = $1',
+      [pdbId]
+    );
+
     res.json({
       success: true,
       data: {
         ...structure.rows[0],
         authors: authors.rows,
         chains: chains.rows,
-        citations: citations.rows
+        citations: citations.rows,
+        ligands: ligands.rows,
+        sequences: sequences.rows,
+        secondary_structures: ss.rows,
+        atom_stats: atomStats.rows[0]
       }
     });
   } catch (err) {
@@ -400,6 +461,41 @@ app.delete('/api/cache/clear', async (req, res) => {
     res.json({ success: true, message: '缓存已清除' });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+
+// 10. 获取最近沉积的结构
+app.get('/api/structures/recent/list', cacheMiddleware(300), async (req, res) => {
+  try {
+    const { limit = 8 } = req.query;
+    const result = await pool.query(
+      'SELECT pdb_id, title, method, resolution, deposit_date, gene_name, organism_scientific_name FROM structures ORDER BY deposit_date DESC NULLS LAST LIMIT $1',
+      [parseInt(limit)]
+    );
+    res.json({ success: true, data: result.rows });
+  } catch (err) {
+    console.error('Error fetching recent structures:', err);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+// 11. 搜索自动补全
+app.get('/api/search/suggest', async (req, res) => {
+  try {
+    const { q, limit = 10 } = req.query;
+    if (!q || q.length < 1) {
+      return res.json({ success: true, data: [] });
+    }
+    const pattern = `${q.toUpperCase()}%`;
+    const result = await pool.query(
+      `SELECT pdb_id, title, gene_name FROM structures WHERE UPPER(pdb_id) LIKE $1 OR UPPER(gene_name) LIKE $1 OR UPPER(title) LIKE $2 LIMIT $3`,
+      [pattern, `%${q.toUpperCase()}%`, parseInt(limit)]
+    );
+    res.json({ success: true, data: result.rows });
+  } catch (err) {
+    console.error('Error in search suggest:', err);
+    res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
 
