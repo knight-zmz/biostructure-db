@@ -260,30 +260,6 @@ router.get('/ligands/:pdbId', async (req, res) => {
 
 /**
  * 7. 统计信息 (增强版)
- */
-router.get('/stats/detailed', async (req, res) => {
-  try {
-    const totalStructures = await pool.query('SELECT COUNT(*) FROM structures');
-    const totalChains = await pool.query('SELECT COUNT(*) FROM polypeptides');
-    const totalLigands = await pool.query('SELECT COUNT(DISTINCT ligand_name) FROM ligands');
-    const methods = await pool.query('SELECT method, COUNT(*) as count FROM structures GROUP BY method');
-    const topLigands = await pool.query('SELECT * FROM ligand_stats LIMIT 10');
-    const topMetals = await pool.query('SELECT * FROM metal_ion_stats LIMIT 10');
-    
-    res.json({
-      success: true,
-      data: {
-        totalStructures: parseInt(totalStructures.rows[0].count),
-        totalChains: parseInt(totalChains.rows[0].count),
-        uniqueLigands: parseInt(totalLigands.rows[0].count),
-        methods: methods.rows,
-        top_ligands: topLigands.rows,
-        top_metals: topMetals.rows
-      }
-    });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
 });
 
 /**
@@ -377,21 +353,118 @@ router.get('/stats', async (req, res) => {
  */
 router.get('/stats/detailed', async (req, res) => {
   try {
-    const structures = await pool.query('SELECT COUNT(*) as "totalStructures" FROM structures');
-    const atoms = await pool.query('SELECT COUNT(*) as "totalAtoms" FROM atoms');
+    const structures = await pool.query('SELECT COUNT(*) as total FROM structures');
+    const atoms = await pool.query('SELECT COUNT(*) as total FROM atoms');
+    const chains = await pool.query('SELECT COUNT(*) as total FROM chains');
     const methods = await pool.query('SELECT method, COUNT(*) as count FROM structures WHERE method IS NOT NULL GROUP BY method');
     const organisms = await pool.query('SELECT organism_scientific_name, COUNT(*) as count FROM structures WHERE organism_scientific_name IS NOT NULL GROUP BY organism_scientific_name ORDER BY count DESC LIMIT 10');
     
     res.json({
       success: true,
       data: {
-        totalStructures: parseInt(structures.rows[0].totalstructures),
-        totalAtoms: parseInt(atoms.rows[0].totalatoms),
+        totalStructures: parseInt(structures.rows[0].total),
+        totalAtoms: parseInt(atoms.rows[0].total),
+        totalChains: parseInt(chains.rows[0].total),
         methods: methods.rows,
         topOrganisms: organisms.rows,
         lastUpdated: new Date().toISOString()
       }
     });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * 13. 获取数据库完整信息
+ */
+router.get('/info', async (req, res) => {
+  try {
+    const dbSize = await pool.query('SELECT pg_size_pretty(pg_database_size(current_database())) as size');
+    const tableStats = await pool.query(`
+      SELECT relname as table_name, n_live_tup as row_count
+      FROM pg_stat_user_tables
+      WHERE schemaname = 'public'
+      ORDER BY n_live_tup DESC
+      LIMIT 10
+    `);
+    const indexStats = await pool.query(`
+      SELECT indexrelname as index_name, idx_scan as scans
+      FROM pg_stat_user_indexes
+      WHERE schemaname = 'public'
+      ORDER BY idx_scan DESC
+      LIMIT 10
+    `);
+    
+    res.json({
+      success: true,
+      data: {
+        databaseSize: dbSize.rows[0].size,
+        tableStats: tableStats.rows,
+        indexStats: indexStats.rows,
+        serverTime: new Date().toISOString()
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * 14. 获取序列比对信息
+ */
+router.get('/sequence/:pdbId/:chainId', async (req, res) => {
+  try {
+    const { pdbId, chainId } = req.params;
+    const result = await pool.query(`
+      SELECT s.pdb_id, s.chain_id, s.sequence, s.length,
+             u.uniprot_id, u.gene_name, u.organism
+      FROM sequence_index s
+      LEFT JOIN uniprot_mappings u ON s.pdb_id = u.pdb_id AND s.chain_id = 1
+      WHERE s.pdb_id = $1 AND s.chain_id = $2
+    `, [pdbId, chainId]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Sequence not found' });
+    }
+    
+    res.json({ success: true, data: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * 15. 获取二级结构信息
+ */
+router.get('/secondary/:pdbId', async (req, res) => {
+  try {
+    const { pdbId } = req.params;
+    const result = await pool.query(`
+      SELECT ss.ss_id, ss.pdb_id, ss.chain_letter, ss.start_residue, ss.end_residue, ss.ss_type, ss.description FROM secondary_structures ss WHERE ss.pdb_id = $1
+    `, [pdbId]);
+    
+    res.json({ success: true, data: result.rows });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * 16. 获取 Pfam 结构域信息
+ */
+router.get('/pfam/:pdbId', async (req, res) => {
+  try {
+    const { pdbId } = req.params;
+    const result = await pool.query(`
+      SELECT pf.*, 
+             u.uniprot_id, u.gene_name
+      FROM pfam_domains pf
+      LEFT JOIN uniprot_mappings u ON pf.pdb_id = u.pdb_id
+      WHERE pf.pdb_id = $1
+    `, [pdbId]);
+    
+    res.json({ success: true, data: result.rows });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
