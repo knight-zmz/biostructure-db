@@ -420,7 +420,7 @@ router.get('/sequence/:pdbId/:chainId', async (req, res) => {
       SELECT s.pdb_id, s.chain_id, s.sequence, s.length,
              u.uniprot_id, u.gene_name, u.organism
       FROM sequence_index s
-      LEFT JOIN uniprot_mappings u ON s.pdb_id = u.pdb_id AND s.chain_id = 1
+      LEFT JOIN uniprot_mappings u ON s.pdb_id = u.pdb_id
       WHERE s.pdb_id = $1 AND s.chain_id = $2
     `, [pdbId, chainId]);
     
