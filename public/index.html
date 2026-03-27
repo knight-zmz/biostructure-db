@@ -4,7 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>BioStructure DB - 专业生物结构数据库</title>
-  <script src="https://3dmol.org/build/3Dmol-min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/molstar@latest/build/viewer/molstar.js"></script>
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/molstar@latest/build/viewer/molstar.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     :root {
@@ -554,6 +555,7 @@
     let viewer = null;
     let currentPdbId = null;
     let searchType = 'structure';
+    let currentStyle = 'cartoon';
     
     // 加载统计数据
     async function loadStats() {
@@ -741,16 +743,56 @@
         '搜索配体名称...';
     }
     
+    // 初始化 Molstar 查看器
+    async function initMolstarViewer() {
+      try {
+        // 检查 Molstar 是否加载
+        if (typeof molstar === 'undefined') {
+          console.warn('Molstar 未加载，尝试延迟初始化...');
+          setTimeout(initMolstarViewer, 1000);
+          return;
+        }
+        
+        viewer = await molstar.Viewer.create('gl', {
+          layoutIsExpanded: true,
+          layoutShowControls: false,
+          layoutShowRemoteState: false,
+          layoutShowSequence: false,
+          layoutShowLog: false,
+          layoutShowLeftPanel: false,
+          
+          viewportShowExpand: true,
+          viewportShowSelectionMode: false,
+          viewportShowAnimation: false,
+          
+          pdbProvider: 'rcsb',
+          emdbProvider: 'rcsb',
+        });
+        
+        console.log('Molstar 查看器初始化成功');
+      } catch (err) {
+        console.error('Molstar 初始化失败:', err);
+        document.getElementById('gl').innerHTML = `
+          <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--text-secondary);">
+            <i class="fas fa-exclamation-circle" style="font-size:48px;margin-bottom:20px;color:var(--warning);"></i>
+            <p>3D 查看器加载失败</p>
+            <p style="font-size:14px;margin-top:10px;">请刷新页面重试</p>
+          </div>
+        `;
+      }
+    }
+    
     // 打开 3D 查看器
     async function openViewer(pdbId) {
       currentPdbId = pdbId;
       const element = document.getElementById('gl');
       element.innerHTML = '<div class="loading">加载中</div>';
       
-      viewer = $3Dmol.createGLViewer(element, {
-        backgroundColor: 'black',
-        disableHelpers: false
-      });
+      // 如果查看器未初始化，先初始化
+      if (!viewer) {
+        await initMolstarViewer();
+        if (!viewer) return;
+      }
       
       // 加载结构详情
       try {
@@ -769,36 +811,108 @@
             </div>
           `;
           
-          // 加载原子坐标
-          loadAndRenderAtoms(pdbId);
+          // 使用 Molstar 加载 PDB 结构
+          await loadStructureWithMolstar(pdbId);
         }
       } catch (err) {
         console.error('加载结构详情失败:', err);
+        element.innerHTML = `
+          <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--danger);">
+            <i class="fas fa-exclamation-triangle" style="font-size:48px;margin-bottom:20px;"></i>
+            <p>加载结构失败</p>
+            <p style="font-size:14px;margin-top:10px;">${err.message}</p>
+          </div>
+        `;
       }
     }
     
-    // 加载并渲染原子
-    async function loadAndRenderAtoms(pdbId) {
+    // 使用 Molstar 加载结构
+    async function loadStructureWithMolstar(pdbId) {
       try {
-        const res = await fetch(`/api/structures/${pdbId}/atoms`);
-        const data = await res.json();
+        // 直接从 RCSB PDB 加载
+        await viewer.loadPdb(pdbId);
+        applyStyle(currentStyle);
+        console.log(`成功加载结构: ${pdbId}`);
+      } catch (err) {
+        console.error('Molstar 加载 PDB 失败，尝试从本地 API 加载:', err);
         
-        if (data.success && data.data.length > 0) {
-          let pdbData = '';
-          data.data.forEach(atom => {
-            pdbData += `ATOM  ${String(atom.atom_id).padStart(5)}  ${atom.atom_name.padStart(4)} ${atom.residue_name.padStart(3)} ${atom.chain_letter || 'A'}${String(atom.residue_num).padStart(4)}    ${String(atom.x_coord).padStart(8, ' ').slice(0,8)}${String(atom.y_coord).padStart(8, ' ').slice(0,8)}${String(atom.z_coord).padStart(8, ' ').slice(0,8)}  1.00  0.00           ${atom.element || 'C'}\n`;
-          });
+        // 如果 RCSB 加载失败，尝试从本地 API 获取原子数据并构建 PDB 格式
+        try {
+          const res = await fetch(`/api/structures/${pdbId}/atoms`);
+          const data = await res.json();
           
-          viewer.clear();
-          viewer.addModel(pdbData, "pdb");
-          viewer.setStyle({}, {cartoon: {color: 'spectrum'}});
-          viewer.zoomTo();
-          viewer.render();
-        } else {
-          document.getElementById('gl').innerHTML = '<div class="loading" style="color:#888">暂无原子坐标数据</div>';
+          if (data.success && data.data.length > 0) {
+            // 构建 PDB 格式数据
+            let pdbData = '';
+            data.data.forEach((atom, idx) => {
+              const serial = String(idx + 1).padStart(5);
+              const name = (atom.atom_name || 'C').padStart(4);
+              const resName = (atom.residue_name || 'ALA').padStart(3);
+              const chain = atom.chain_letter || 'A';
+              const resSeq = String(atom.residue_num || 1).padStart(4);
+              const x = parseFloat(atom.x_coord || 0).toFixed(3).padStart(8);
+              const y = parseFloat(atom.y_coord || 0).toFixed(3).padStart(8);
+              const z = parseFloat(atom.z_coord || 0).toFixed(3).padStart(8);
+              const element = (atom.element || 'C').padStart(2);
+              
+              pdbData += `ATOM  ${serial} ${name} ${resName} ${chain}${resSeq}    ${x}${y}${z}  1.00  0.00           ${element}\n`;
+            });
+            pdbData += 'END\n';
+            
+            // 使用 Molstar 加载 PDB 数据
+            await viewer.loadStructureFromData(pdbData, 'pdb', false);
+            applyStyle(currentStyle);
+            console.log(`从本地 API 加载结构成功: ${pdbId}`);
+          } else {
+            throw new Error('没有原子坐标数据');
+          }
+        } catch (localErr) {
+          console.error('本地加载也失败:', localErr);
+          document.getElementById('gl').innerHTML = `
+            <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--warning);">
+              <i class="fas fa-cube" style="font-size:48px;margin-bottom:20px;"></i>
+              <p>暂无 3D 数据</p>
+              <p style="font-size:14px;margin-top:10px;">该结构暂无原子坐标</p>
+            </div>
+          `;
+        }
+      }
+    }
+    
+    // 应用显示样式
+    function applyStyle(style) {
+      if (!viewer) return;
+      
+      currentStyle = style;
+      
+      // Molstar 样式映射
+      const styleMap = {
+        cartoon: 'cartoon',
+        stick: 'ball-and-stick',
+        sphere: 'spacefill',
+        surface: 'molecular-surface'
+      };
+      
+      try {
+        // 获取当前结构并应用样式
+        const plugin = viewer.plugin;
+        if (plugin && plugin.managers) {
+          // 使用 Molstar 的表示管理器
+          const structures = plugin.managers.structure.hierarchy.current.structures;
+          if (structures && structures.length > 0) {
+            const structure = structures[0];
+            const repr = structure.representations[0];
+            if (repr) {
+              // 更新表示类型
+              plugin.managers.structure.component.updateRepresentationsTheme(structure.components, {
+                type: styleMap[style] || 'cartoon',
+                color: 'sequence-id'
+              });
+            }
+          }
         }
       } catch (err) {
-        console.error('加载原子坐标失败:', err);
+        console.warn('应用样式失败，使用默认样式:', err);
       }
     }
     
@@ -807,27 +921,18 @@
       document.querySelectorAll('.control-btn').forEach(b => b.classList.remove('active'));
       if (btn) btn.classList.add('active');
       
-      const styles = {
-        cartoon: {cartoon: {color: 'spectrum'}},
-        stick: {stick: {radius: 0.15, color: 'spectrum'}},
-        sphere: {sphere: {scale: 0.3, color: 'spectrum'}},
-        surface: {surface: {color: 'spectrum', opacity: 0.8}}
-      };
-      
-      if (viewer) {
-        viewer.clear();
-        loadAndRenderAtoms(currentPdbId).then(() => {
-          viewer.setStyle({}, styles[style]);
-          viewer.render();
-        });
-      }
+      currentStyle = style;
+      applyStyle(style);
     }
     
     // 关闭查看器
     function closeViewer() {
       if (viewer) {
-        viewer.clear();
-        viewer = null;
+        try {
+          viewer.clear();
+        } catch (err) {
+          console.warn('关闭查看器时出错:', err);
+        }
       }
       document.getElementById('structureInfo').innerHTML = '';
       document.getElementById('gl').innerHTML = '';
@@ -840,6 +945,13 @@
     }
     
     // 初始化
+    document.addEventListener('DOMContentLoaded', async () => {
+      await loadStats();
+      await loadStructures();
+      await initMolstarViewer();
+    });
+    
+    // 页面加载完成后立即执行
     loadStats();
     loadStructures();
   </script>
