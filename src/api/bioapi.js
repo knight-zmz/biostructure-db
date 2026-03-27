@@ -355,15 +355,15 @@ module.exports = router;
  */
 router.get('/stats', async (req, res) => {
   try {
-    const structures = await pool.query('SELECT COUNT(*) as "totalStructures" FROM structures');
-    const atoms = await pool.query('SELECT COUNT(*) as "totalAtoms" FROM atoms');
+    const structures = await pool.query('SELECT COUNT(*) as count FROM structures');
+    const atoms = await pool.query('SELECT COUNT(*) as count FROM atoms');
     const methods = await pool.query('SELECT method, COUNT(*) as count FROM structures WHERE method IS NOT NULL GROUP BY method');
     
     res.json({
       success: true,
       data: {
-        totalStructures: parseInt(structures.rows[0].totalstructures),
-        totalAtoms: parseInt(atoms.rows[0].totalatoms),
+        totalStructures: parseInt(structures.rows[0].count),
+        totalAtoms: parseInt(atoms.rows[0].count),
         methods: methods.rows
       }
     });
