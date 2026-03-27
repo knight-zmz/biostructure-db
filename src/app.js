@@ -97,7 +97,7 @@ app.get('/api/docs', (req, res) => {
 });
 
 // 结构对比端点
-app.get('/api/compare', cacheMiddleware(300), async (req, res) => {
+app.get('/api/compare', async (req, res) => {
   try {
     const { pdb1, pdb2 } = req.query;
     if (!pdb1 || !pdb2) {
