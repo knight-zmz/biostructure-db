@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>搜索 - BioStructure DB</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --primary: #0066cc;
+      --secondary: #00a3e0;
+      --accent: #00d9ff;
+      --bg-dark: #1a1a2e;
+      --bg-light: #16213e;
+      --text: #ffffff;
+      --text-sec: #a0a0a0;
+      --success: #00ff88;
+      --border: rgba(255,255,255,0.1);
+      --danger: #ff4757;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, var(--bg-dark) 0%, var(--bg-light) 100%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    header {
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      position: sticky; top: 0; z-index: 1000;
+      box-shadow: 0 2px 20px rgba(0,0,0,0.3);
+    }
+    .header-container {
+      max-width: 1400px; margin: 0 auto; padding: 15px 20px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .logo { display: flex; align-items: center; gap: 15px; text-decoration: none; color: white; }
+    .logo-icon { font-size: 32px; background: rgba(255,255,255,0.2); padding: 10px; border-radius: 10px; }
+    .logo-text h1 { font-size: 20px; font-weight: 700; }
+    .logo-text p { font-size: 11px; opacity: 0.9; }
+    nav { display: flex; gap: 5px; }
+    nav a { color: white; text-decoration: none; padding: 10px 18px; border-radius: 8px; transition: all 0.3s; font-weight: 500; font-size: 14px; }
+    nav a:hover, nav a.active { background: rgba(255,255,255,0.2); }
+    .container { max-width: 1400px; margin: 0 auto; padding: 30px 20px; }
+    .page-title { font-size: 28px; margin-bottom: 10px; background: linear-gradient(90deg, var(--accent), var(--success)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .page-subtitle { color: var(--text-sec); margin-bottom: 30px; }
+    /* Search Box */
+    .search-box {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 30px;
+      margin-bottom: 30px;
+    }
+    .search-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 15px;
+    }
+    .search-input {
+      flex: 1;
+      background: rgba(255,255,255,0.05);
+      border: 2px solid var(--border);
+      color: var(--text);
+      padding: 14px 20px;
+      border-radius: 12px;
+      font-size: 16px;
+      transition: all 0.3s;
+    }
+    .search-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 20px rgba(0,217,255,0.2); }
+    .search-input::placeholder { color: var(--text-sec); }
+    .search-btn {
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: white; border: none; padding: 14px 28px;
+      border-radius: 12px; font-size: 16px; font-weight: 600;
+      cursor: pointer; transition: all 0.3s; white-space: nowrap;
+    }
+    .search-btn:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(0,102,204,0.4); }
+    .search-types {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .search-type {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      color: var(--text-sec);
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-size: 13px;
+    }
+    .search-type:hover { border-color: var(--accent); color: var(--text); }
+    .search-type.active { background: var(--primary); border-color: var(--primary); color: white; }
+    /* Results */
+    .results-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .results-count { color: var(--text-sec); font-size: 14px; }
+    .results-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+      gap: 20px;
+    }
+    .result-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 22px;
+      transition: all 0.3s;
+      cursor: pointer;
+    }
+    .result-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--accent);
+      box-shadow: 0 12px 40px rgba(0,217,255,0.15);
+    }
+    .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+    .pdb-id { font-size: 22px; font-weight: 700; color: var(--accent); font-family: monospace; }
+    .resolution-badge { background: linear-gradient(135deg, var(--primary), var(--secondary)); padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+    .card-title { color: var(--text); font-size: 14px; line-height: 1.5; margin-bottom: 14px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .card-meta { display: flex; gap: 8px; flex-wrap: wrap; }
+    .tag { background: rgba(255,255,255,0.06); padding: 4px 10px; border-radius: 6px; font-size: 11px; color: var(--text-sec); }
+    .empty-state { text-align: center; padding: 60px; color: var(--text-sec); }
+    .empty-state i { font-size: 48px; margin-bottom: 15px; opacity: 0.3; }
+    .spinner { width: 30px; height: 30px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 10px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (max-width: 768px) {
+      .search-row { flex-direction: column; }
+      .results-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-container">
+      <a href="/" class="logo">
+        <div class="logo-icon">🧬</div>
+        <div class="logo-text"><h1>BioStructure DB</h1><p>专业生物结构数据库</p></div>
+      </a>
+      <nav>
+        <a href="/"><i class="fas fa-home"></i> 首页</a>
+        <a href="/pages/browse.html"><i class="fas fa-th"></i> 浏览</a>
+        <a href="/pages/search.html" class="active"><i class="fas fa-search"></i> 搜索</a>
+        <a href="/pages/3d-viewer.html"><i class="fas fa-cube"></i> 3D</a>
+        <a href="/pages/docs.html"><i class="fas fa-book"></i> API</a>
+        <a href="https://github.com/knight-zmz/biostructure-db" target="_blank"><i class="fab fa-github"></i></a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="container">
+    <h1 class="page-title">搜索蛋白质结构</h1>
+    <p class="page-subtitle">按 PDB ID、基因名、生物体、配体搜索</p>
+
+    <div class="search-box">
+      <div class="search-row">
+        <input type="text" class="search-input" id="searchInput" placeholder="输入搜索关键词..." autofocus>
+        <button class="search-btn" onclick="doSearch()"><i class="fas fa-search"></i> 搜索</button>
+      </div>
+      <div class="search-types">
+        <div class="search-type active" data-type="all" onclick="setSearchType(this)"><i class="fas fa-globe"></i> 综合</div>
+        <div class="search-type" data-type="pdb" onclick="setSearchType(this)"><i class="fas fa-fingerprint"></i> PDB ID</div>
+        <div class="search-type" data-type="gene" onclick="setSearchType(this)"><i class="fas fa-dna"></i> 基因名</div>
+        <div class="search-type" data-type="organism" onclick="setSearchType(this)"><i class="fas fa-virus"></i> 生物体</div>
+        <div class="search-type" data-type="ligand" onclick="setSearchType(this)"><i class="fas fa-atom"></i> 配体</div>
+        <div class="search-type" data-type="sequence" onclick="setSearchType(this)"><i class="fas fa-stream"></i> 序列</div>
+      </div>
+    </div>
+
+    <div id="results">
+      <div class="empty-state">
+        <i class="fas fa-search"></i>
+        <p>输入关键词开始搜索</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let searchType = 'all';
+
+    function setSearchType(el) {
+      document.querySelectorAll('.search-type').forEach(t => t.classList.remove('active'));
+      el.classList.add('active');
+      searchType = el.dataset.type;
+      const input = document.getElementById('searchInput');
+      const placeholders = {
+        all: '输入 PDB ID、基因名、生物体...',
+        pdb: '输入 PDB ID (如 1CRN)',
+        gene: '输入基因名 (如 TP53)',
+        organism: '输入生物体名 (如 Homo sapiens)',
+        ligand: '输入配体名 (如 ATP)',
+        sequence: '输入氨基酸序列...'
+      };
+      input.placeholder = placeholders[searchType] || '输入搜索关键词...';
+      input.focus();
+    }
+
+    document.getElementById('searchInput').addEventListener('keyup', function(e) {
+      if (e.key === 'Enter') doSearch();
+    });
+
+    async function doSearch() {
+      const query = document.getElementById('searchInput').value.trim();
+      if (!query) return;
+
+      const results = document.getElementById('results');
+      results.innerHTML = '<div class="empty-state"><div class="spinner"></div><p>搜索中...</p></div>';
+
+      try {
+        let url;
+        switch(searchType) {
+          case 'pdb':
+            url = '/api/structures/' + query.toUpperCase();
+            break;
+          case 'gene':
+            url = '/api/bio/gene/' + encodeURIComponent(query);
+            break;
+          case 'organism':
+            url = '/api/bio/organism/' + encodeURIComponent(query);
+            break;
+          case 'ligand':
+            url = '/api/bio/search/ligand?name=' + encodeURIComponent(query);
+            break;
+          case 'sequence':
+            url = '/api/bio/search/sequence?sequence=' + encodeURIComponent(query);
+            break;
+          default:
+            url = '/api/bio/search/structure?q=' + encodeURIComponent(query);
+        }
+
+        const res = await fetch(url);
+        const data = await res.json();
+
+        let structures = [];
+        if (data.success) {
+          if (searchType === 'pdb' && data.data && data.data.pdb_id) {
+            structures = [data.data];
+          } else if (Array.isArray(data.data)) {
+            structures = data.data;
+          }
+        }
+
+        if (structures.length === 0) {
+          results.innerHTML = '<div class="empty-state"><i class="fas fa-search-minus"></i><p>未找到相关结果</p></div>';
+          return;
+        }
+
+        const resultsCount = `<div class="results-header"><div class="results-count">找到 <strong>${structures.length}</strong> 个结果</div></div>`;
+        const grid = '<div class="results-grid">' + structures.map(s => `
+          <div class="result-card" onclick="location.href='/pages/browse.html'">
+            <div class="card-header">
+              <div class="pdb-id">${s.pdb_id || query.toUpperCase()}</div>
+              <div class="resolution-badge">${s.resolution ? s.resolution + ' Å' : 'N/A'}</div>
+            </div>
+            <div class="card-title">${s.title || s.protein_name || '无标题'}</div>
+            <div class="card-meta">
+              ${s.method ? `<span class="tag"><i class="fas fa-flask"></i> ${s.method}</span>` : ''}
+              ${s.gene_name ? `<span class="tag"><i class="fas fa-dna"></i> ${s.gene_name}</span>` : ''}
+              ${s.organism_scientific_name || s.organism ? `<span class="tag"><i class="fas fa-virus"></i> ${s.organism_scientific_name || s.organism}</span>` : ''}
+              ${s.ligand_name ? `<span class="tag"><i class="fas fa-atom"></i> ${s.ligand_name}</span>` : ''}
+            </div>
+          </div>
+        `).join('') + '</div>';
+
+        results.innerHTML = resultsCount + grid;
+      } catch(e) {
+        results.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle" style="color:var(--danger)"></i><p>搜索出错: ' + e.message + '</p></div>';
+      }
+    }
+  </script>
+</body>
+</html>

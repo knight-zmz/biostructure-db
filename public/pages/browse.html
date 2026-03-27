@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>浏览 - BioStructure DB</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --primary: #0066cc;
+      --secondary: #00a3e0;
+      --accent: #00d9ff;
+      --bg-dark: #1a1a2e;
+      --bg-light: #16213e;
+      --text: #ffffff;
+      --text-sec: #a0a0a0;
+      --success: #00ff88;
+      --border: rgba(255,255,255,0.1);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, var(--bg-dark) 0%, var(--bg-light) 100%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    header {
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      padding: 0;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      box-shadow: 0 2px 20px rgba(0,0,0,0.3);
+    }
+    .header-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      text-decoration: none;
+      color: white;
+    }
+    .logo-icon {
+      font-size: 32px;
+      background: rgba(255,255,255,0.2);
+      padding: 10px;
+      border-radius: 10px;
+    }
+    .logo-text h1 {
+      font-size: 20px;
+      font-weight: 700;
+    }
+    .logo-text p {
+      font-size: 11px;
+      opacity: 0.9;
+    }
+    nav {
+      display: flex;
+      gap: 5px;
+    }
+    nav a {
+      color: white;
+      text-decoration: none;
+      padding: 10px 18px;
+      border-radius: 8px;
+      transition: all 0.3s;
+      font-weight: 500;
+      font-size: 14px;
+    }
+    nav a:hover, nav a.active {
+      background: rgba(255,255,255,0.2);
+    }
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 30px 20px;
+    }
+    .page-title {
+      font-size: 28px;
+      margin-bottom: 10px;
+      background: linear-gradient(90deg, var(--accent), var(--success));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .page-subtitle {
+      color: var(--text-sec);
+      margin-bottom: 30px;
+    }
+    /* Filters */
+    .filters {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 25px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .filter-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .filter-group label {
+      color: var(--text-sec);
+      font-size: 13px;
+    }
+    .filter-select {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .filter-select:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .filter-select option {
+      background: var(--bg-dark);
+      color: var(--text);
+    }
+    /* Grid */
+    .structure-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+      gap: 20px;
+    }
+    .structure-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 22px;
+      transition: all 0.3s;
+      cursor: pointer;
+    }
+    .structure-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--accent);
+      box-shadow: 0 12px 40px rgba(0,217,255,0.15);
+      background: rgba(255,255,255,0.06);
+    }
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+    .pdb-id {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--accent);
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    }
+    .resolution-badge {
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .card-title {
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.5;
+      margin-bottom: 14px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .card-meta {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .tag {
+      background: rgba(255,255,255,0.06);
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      color: var(--text-sec);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .tag i { font-size: 10px; }
+    /* Pagination */
+    .pagination {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      margin-top: 35px;
+      padding: 20px 0;
+    }
+    .page-btn {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 16px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-size: 14px;
+    }
+    .page-btn:hover {
+      background: rgba(255,255,255,0.1);
+      border-color: var(--accent);
+    }
+    .page-btn.active {
+      background: var(--primary);
+      border-color: var(--primary);
+    }
+    .page-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+    .page-info {
+      color: var(--text-sec);
+      font-size: 13px;
+    }
+    /* Stats bar */
+    .stats-bar {
+      display: flex;
+      gap: 25px;
+      margin-bottom: 25px;
+      padding: 18px 24px;
+      background: rgba(255,255,255,0.03);
+      border-radius: 14px;
+      border: 1px solid var(--border);
+    }
+    .stat-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .stat-item i {
+      color: var(--accent);
+      font-size: 18px;
+    }
+    .stat-num {
+      font-size: 22px;
+      font-weight: 700;
+    }
+    .stat-label {
+      font-size: 12px;
+      color: var(--text-sec);
+    }
+    /* Loading */
+    .loading {
+      text-align: center;
+      padding: 60px;
+      color: var(--text-sec);
+    }
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 15px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    /* Modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.7);
+      z-index: 2000;
+      backdrop-filter: blur(5px);
+    }
+    .modal-overlay.show { display: flex; justify-content: center; align-items: center; }
+    .modal {
+      background: var(--bg-light);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 30px;
+      max-width: 700px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+      position: relative;
+    }
+    .modal-close {
+      position: absolute;
+      top: 15px;
+      right: 20px;
+      background: none;
+      border: none;
+      color: var(--text-sec);
+      font-size: 24px;
+      cursor: pointer;
+    }
+    .modal-close:hover { color: var(--text); }
+    .modal h2 {
+      color: var(--accent);
+      margin-bottom: 15px;
+      font-size: 24px;
+    }
+    .modal .detail-row {
+      display: flex;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .modal .detail-label {
+      width: 140px;
+      color: var(--text-sec);
+      font-size: 13px;
+      flex-shrink: 0;
+    }
+    .modal .detail-value {
+      color: var(--text);
+      font-size: 14px;
+    }
+    .modal .view-3d-btn {
+      display: inline-block;
+      margin-top: 20px;
+      padding: 12px 24px;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: white;
+      text-decoration: none;
+      border-radius: 10px;
+      font-weight: 600;
+      transition: all 0.3s;
+    }
+    .modal .view-3d-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 20px rgba(0,102,204,0.4);
+    }
+    @media (max-width: 768px) {
+      .header-container { flex-direction: column; gap: 10px; }
+      .structure-grid { grid-template-columns: 1fr; }
+      .filters { flex-direction: column; }
+      .stats-bar { flex-wrap: wrap; gap: 15px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-container">
+      <a href="/" class="logo">
+        <div class="logo-icon">🧬</div>
+        <div class="logo-text">
+          <h1>BioStructure DB</h1>
+          <p>专业生物结构数据库</p>
+        </div>
+      </a>
+      <nav>
+        <a href="/"><i class="fas fa-home"></i> 首页</a>
+        <a href="/pages/browse.html" class="active"><i class="fas fa-th"></i> 浏览</a>
+        <a href="/pages/search.html"><i class="fas fa-search"></i> 搜索</a>
+        <a href="/pages/3d-viewer.html"><i class="fas fa-cube"></i> 3D</a>
+        <a href="/pages/docs.html"><i class="fas fa-book"></i> API</a>
+        <a href="https://github.com/knight-zmz/biostructure-db" target="_blank"><i class="fab fa-github"></i></a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="container">
+    <h1 class="page-title">浏览蛋白质结构</h1>
+    <p class="page-subtitle">探索已收录的蛋白质结构数据库</p>
+
+    <!-- Stats Bar -->
+    <div class="stats-bar">
+      <div class="stat-item">
+        <i class="fas fa-cube"></i>
+        <div>
+          <div class="stat-num" id="totalStructures">-</div>
+          <div class="stat-label">结构总数</div>
+        </div>
+      </div>
+      <div class="stat-item">
+        <i class="fas fa-atom"></i>
+        <div>
+          <div class="stat-num" id="totalAtoms">-</div>
+          <div class="stat-label">原子总数</div>
+        </div>
+      </div>
+      <div class="stat-item">
+        <i class="fas fa-link"></i>
+        <div>
+          <div class="stat-num" id="totalChains">-</div>
+          <div class="stat-label">肽链总数</div>
+        </div>
+      </div>
+      <div class="stat-item">
+        <i class="fas fa-database"></i>
+        <div>
+          <div class="stat-num" id="dbSize">-</div>
+          <div class="stat-label">数据库大小</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters">
+      <div class="filter-group">
+        <label>排序:</label>
+        <select class="filter-select" id="sortBy" onchange="loadStructures()">
+          <option value="resolution">分辨率 ↑</option>
+          <option value="resolution_desc">分辨率 ↓</option>
+          <option value="pdb_id">PDB ID A-Z</option>
+          <option value="pdb_id_desc">PDB ID Z-A</option>
+          <option value="atoms_desc">原子数 ↓</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>方法:</label>
+        <select class="filter-select" id="filterMethod" onchange="loadStructures()">
+          <option value="">全部</option>
+          <option value="X-RAY DIFFRACTION">X-Ray</option>
+          <option value="ELECTRON MICROSCOPY">Cryo-EM</option>
+          <option value="SOLUTION NMR">NMR</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>每页:</label>
+        <select class="filter-select" id="perPage" onchange="loadStructures()">
+          <option value="12">12</option>
+          <option value="24">24</option>
+          <option value="48">48</option>
+          <option value="108">全部</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Structure Grid -->
+    <div id="structureGrid">
+      <div class="loading">
+        <div class="spinner"></div>
+        <p>加载中...</p>
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination" id="pagination"></div>
+  </div>
+
+  <!-- Detail Modal -->
+  <div class="modal-overlay" id="detailModal">
+    <div class="modal">
+      <button class="modal-close" onclick="closeModal()">&times;</button>
+      <div id="modalContent"></div>
+    </div>
+  </div>
+
+  <script>
+    let currentPage = 1;
+
+    async function loadStats() {
+      try {
+        const res = await fetch('/api/bio/info');
+        const data = await res.json();
+        if (data.success) {
+          document.getElementById('dbSize').textContent = data.data.databaseSize;
+          const stats = data.data.tableStats;
+          const s = stats.find(t => t.table_name === 'structures');
+          const a = stats.find(t => t.table_name === 'atoms');
+          const c = stats.find(t => t.table_name === 'chains');
+          if (s) document.getElementById('totalStructures').textContent = s.row_count;
+          if (a) document.getElementById('totalAtoms').textContent = parseInt(a.row_count).toLocaleString();
+          if (c) document.getElementById('totalChains').textContent = c.row_count;
+        }
+      } catch(e) { console.error('Stats error:', e); }
+    }
+
+    async function loadStructures() {
+      currentPage = 1;
+      await fetchPage(1);
+    }
+
+    async function fetchPage(page) {
+      currentPage = page;
+      const grid = document.getElementById('structureGrid');
+      grid.innerHTML = '<div class="loading"><div class="spinner"></div><p>加载中...</p></div>';
+
+      try {
+        const res = await fetch('/api/structures');
+        const data = await res.json();
+
+        if (data.success) {
+          let structures = data.data;
+
+          // Filter
+          const method = document.getElementById('filterMethod').value;
+          if (method) {
+            structures = structures.filter(s => s.method === method);
+          }
+
+          // Sort
+          const sortBy = document.getElementById('sortBy').value;
+          structures.sort((a, b) => {
+            switch(sortBy) {
+              case 'resolution': return (a.resolution || 999) - (b.resolution || 999);
+              case 'resolution_desc': return (b.resolution || 0) - (a.resolution || 0);
+              case 'pdb_id': return a.pdb_id.localeCompare(b.pdb_id);
+              case 'pdb_id_desc': return b.pdb_id.localeCompare(a.pdb_id);
+              case 'atoms_desc': return (b.atom_count || 0) - (a.atom_count || 0);
+              default: return 0;
+            }
+          });
+
+          // Paginate
+          const perPage = parseInt(document.getElementById('perPage').value);
+          const totalPages = Math.ceil(structures.length / perPage);
+          const start = (page - 1) * perPage;
+          const pageData = structures.slice(start, start + perPage);
+
+          // Render
+          grid.innerHTML = '<div class="structure-grid">' + pageData.map(s => `
+            <div class="structure-card" onclick="showDetail('${s.pdb_id}')">
+              <div class="card-header">
+                <div class="pdb-id">${s.pdb_id}</div>
+                <div class="resolution-badge">${s.resolution ? s.resolution + ' Å' : 'N/A'}</div>
+              </div>
+              <div class="card-title">${s.title || '无标题'}</div>
+              <div class="card-meta">
+                <span class="tag"><i class="fas fa-flask"></i> ${s.method || 'N/A'}</span>
+                ${s.gene_name ? `<span class="tag"><i class="fas fa-dna"></i> ${s.gene_name}</span>` : ''}
+                ${s.organism_scientific_name ? `<span class="tag"><i class="fas fa-virus"></i> ${s.organism_scientific_name}</span>` : ''}
+                ${s.molecule_weight ? `<span class="tag"><i class="fas fa-weight-hanging"></i> ${s.molecule_weight} Da</span>` : ''}
+              </div>
+            </div>
+          `).join('') + '</div>';
+
+          // Pagination
+          renderPagination(page, totalPages, structures.length);
+        }
+      } catch(e) {
+        grid.innerHTML = '<div class="loading"><p style="color:#ff4757">加载失败: ' + e.message + '</p></div>';
+      }
+    }
+
+    function renderPagination(page, total, count) {
+      const pag = document.getElementById('pagination');
+      if (total <= 1) { pag.innerHTML = ''; return; }
+
+      let html = `<button class="page-btn" onclick="fetchPage(${page-1})" ${page<=1?'disabled':''}><i class="fas fa-chevron-left"></i></button>`;
+
+      for (let i = 1; i <= total; i++) {
+        if (i === 1 || i === total || Math.abs(i - page) <= 2) {
+          html += `<button class="page-btn ${i===page?'active':''}" onclick="fetchPage(${i})">${i}</button>`;
+        } else if (Math.abs(i - page) === 3) {
+          html += '<span class="page-info">...</span>';
+        }
+      }
+
+      html += `<button class="page-btn" onclick="fetchPage(${page+1})" ${page>=total?'disabled':''}><i class="fas fa-chevron-right"></i></button>`;
+      html += `<span class="page-info">共 ${count} 个结构</span>`;
+      pag.innerHTML = html;
+    }
+
+    async function showDetail(pdbId) {
+      const modal = document.getElementById('detailModal');
+      const content = document.getElementById('modalContent');
+      modal.classList.add('show');
+      content.innerHTML = '<div class="loading"><div class="spinner"></div><p>加载详情...</p></div>';
+
+      try {
+        const res = await fetch('/api/structures/' + pdbId);
+        const data = await res.json();
+        if (data.success) {
+          const s = data.data;
+          content.innerHTML = `
+            <h2><i class="fas fa-cube" style="margin-right:10px"></i>${pdbId}</h2>
+            <p style="color:var(--text-sec);margin-bottom:20px;line-height:1.6">${s.title || '无标题'}</p>
+            <div class="detail-row"><div class="detail-label">实验方法</div><div class="detail-value">${s.method || 'N/A'}</div></div>
+            <div class="detail-row"><div class="detail-label">分辨率</div><div class="detail-value">${s.resolution ? s.resolution + ' Å' : 'N/A'}</div></div>
+            <div class="detail-row"><div class="detail-label">基因名</div><div class="detail-value">${s.gene_name || 'N/A'}</div></div>
+            <div class="detail-row"><div class="detail-label">生物体</div><div class="detail-value">${s.organism_scientific_name || 'N/A'}</div></div>
+            <div class="detail-row"><div class="detail-label">分子量</div><div class="detail-value">${s.molecule_weight ? s.molecule_weight.toLocaleString() + ' Da' : 'N/A'}</div></div>
+            <div class="detail-row"><div class="detail-label">发布时间</div><div class="detail-value">${s.deposition_date || 'N/A'}</div></div>
+            <a href="/pages/3d-viewer.html?pdb=${pdbId}" class="view-3d-btn"><i class="fas fa-cube"></i> 3D 可视化</a>
+          `;
+        }
+      } catch(e) {
+        content.innerHTML = '<p style="color:#ff4757">加载失败</p>';
+      }
+    }
+
+    function closeModal() {
+      document.getElementById('detailModal').classList.remove('show');
+    }
+
+    document.getElementById('detailModal').addEventListener('click', function(e) {
+      if (e.target === this) closeModal();
+    });
+
+    // Init
+    loadStats();
+    loadStructures();
+  </script>
+</body>
+</html>
