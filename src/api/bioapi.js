@@ -469,3 +469,56 @@ router.get('/pfam/:pdbId', async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 });
+
+/**
+ * 17. 通用搜索
+ */
+router.get('/search/structure', async (req, res) => {
+  try {
+    const { q } = req.query;
+    if (!q) {
+      return res.status(400).json({ success: false, error: 'Search query required' });
+    }
+    
+    const result = await pool.query(`
+      SELECT pdb_id, title, resolution, method, gene_name, organism_scientific_name
+      FROM structures
+      WHERE pdb_id ILIKE $1 
+         OR title ILIKE $1 
+         OR gene_name ILIKE $1 
+         OR organism_scientific_name ILIKE $1
+      ORDER BY resolution ASC NULLS LAST
+      LIMIT 50
+    `, [`%${q}%`]);
+    
+    res.json({ success: true, data: result.rows });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * 18. 配体搜索
+ */
+router.get('/search/ligand', async (req, res) => {
+  try {
+    const { name } = req.query;
+    if (!name) {
+      return res.status(400).json({ success: false, error: 'Ligand name required' });
+    }
+    
+    const result = await pool.query(`
+      SELECT l.pdb_id, l.ligand_name, l.ligand_type, 
+             s.title, s.resolution, s.method
+      FROM ligands l
+      LEFT JOIN structures s ON l.pdb_id = s.pdb_id
+      WHERE l.ligand_name ILIKE $1
+      ORDER BY s.resolution ASC NULLS LAST
+      LIMIT 50
+    `, [`%${name}%`]);
+    
+    res.json({ success: true, data: result.rows });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
