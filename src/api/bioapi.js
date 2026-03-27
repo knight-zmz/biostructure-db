@@ -61,88 +61,6 @@ router.get('/search/sequence', async (req, res) => {
 /**
  * 2. 结构搜索 - 按实验方法、分辨率等
  */
-router.get('/search/structure', async (req, res) => {
-  try {
-    const { method, minRes, maxRes, organism, gene } = req.query;
-    
-    let conditions = ['1=1'];
-    const params = [];
-    let paramCount = 0;
-    
-    if (method) {
-      paramCount++;
-      conditions.push(`method ILIKE $${paramCount}`);
-      params.push(`%${method}%`);
-    }
-    
-    if (minRes) {
-      paramCount++;
-      conditions.push(`resolution >= $${paramCount}`);
-      params.push(parseFloat(minRes));
-    }
-    
-    if (maxRes) {
-      paramCount++;
-      conditions.push(`resolution <= $${paramCount}`);
-      params.push(parseFloat(maxRes));
-    }
-    
-    if (organism) {
-      paramCount++;
-      conditions.push(`organism_scientific_name ILIKE $${paramCount}`);
-      params.push(`%${organism}%`);
-    }
-    
-    if (gene) {
-      paramCount++;
-      conditions.push(`gene_name ILIKE $${paramCount}`);
-      params.push(`%${gene}%`);
-    }
-    
-    const query = `SELECT * FROM structure_stats WHERE ${conditions.join(' AND ')} LIMIT 100`;
-    const result = await pool.query(query, params);
-    
-    res.json({ success: true, data: result.rows });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-/**
- * 3. 配体搜索 - 类似 PubChem
- */
-router.get('/search/ligand', async (req, res) => {
-  try {
-    const { name, formula } = req.query;
-    
-    let query = 'SELECT * FROM ligands WHERE 1=1';
-    const params = [];
-    let paramCount = 0;
-    
-    if (name) {
-      paramCount++;
-      query += ` AND (ligand_name ILIKE $${paramCount} OR chem_comp_id ILIKE $${paramCount})`;
-      params.push(`%${name}%`);
-    }
-    
-    if (formula) {
-      paramCount++;
-      query += ` AND formula ILIKE $${paramCount}`;
-      params.push(`%${formula}%`);
-    }
-    
-    query += ' LIMIT 50';
-    const result = await pool.query(query, params);
-    
-    res.json({ success: true, data: result.rows });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-/**
- * 4. 获取结构详情 (完整版)
- */
 router.get('/structure/:pdbId/full', async (req, res) => {
   try {
     const { pdbId } = req.params;
@@ -359,12 +277,21 @@ router.get('/stats/detailed', async (req, res) => {
     const methods = await pool.query('SELECT method, COUNT(*) as count FROM structures WHERE method IS NOT NULL GROUP BY method');
     const organisms = await pool.query('SELECT organism_scientific_name, COUNT(*) as count FROM structures WHERE organism_scientific_name IS NOT NULL GROUP BY organism_scientific_name ORDER BY count DESC LIMIT 10');
     
+    let uniqueLigands = 0;
+    try {
+      const ligandsResult = await pool.query('SELECT COUNT(DISTINCT ligand_name) as total FROM ligands');
+      uniqueLigands = parseInt(ligandsResult.rows[0].total);
+    } catch (e) {
+      // ligands table might not exist or be empty
+    }
+    
     res.json({
       success: true,
       data: {
         totalStructures: parseInt(structures.rows[0].total),
         totalAtoms: parseInt(atoms.rows[0].total),
         totalChains: parseInt(chains.rows[0].total),
+        uniqueLigands: uniqueLigands,
         methods: methods.rows,
         topOrganisms: organisms.rows,
         lastUpdated: new Date().toISOString()

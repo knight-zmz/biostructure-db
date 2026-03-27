@@ -507,10 +507,10 @@
         </div>
         <div id="gl"></div>
         <div class="viewer-controls">
-          <button class="control-btn active" onclick="setStyle('cartoon')"><i class="fas fa ribbon"></i> 卡通</button>
-          <button class="control-btn" onclick="setStyle('stick')"><i class="fas fa-bars"></i> 棍状</button>
-          <button class="control-btn" onclick="setStyle('sphere')"><i class="fas fa-circle"></i> 球棍</button>
-          <button class="control-btn" onclick="setStyle('surface')"><i class="fas fa-globe"></i> 表面</button>
+          <button class="control-btn active" onclick="setStyle('cartoon', this)"><i class="fas fa-ribbon"></i> 卡通</button>
+          <button class="control-btn" onclick="setStyle('stick', this)"><i class="fas fa-bars"></i> 棍状</button>
+          <button class="control-btn" onclick="setStyle('sphere', this)"><i class="fas fa-circle"></i> 球棍</button>
+          <button class="control-btn" onclick="setStyle('surface', this)"><i class="fas fa-globe"></i> 表面</button>
         </div>
         <div id="structureInfo" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1);"></div>
       </div>
@@ -577,7 +577,7 @@
             </div>
             <div class="stat-card">
               <div class="stat-icon"><i class="fas fa-link"></i></div>
-              <div class="stat-number">${data.data.uniqueLigands || 0}</div>
+              <div class="stat-number">${data.data.uniqueLigands ?? '-'}</div>
               <div class="stat-label">独特配体</div>
             </div>
           `;
@@ -734,9 +734,9 @@
     }
     
     // 切换显示样式
-    function setStyle(style) {
-      document.querySelectorAll('.control-btn').forEach(btn => btn.classList.remove('active'));
-      event.target.classList.add('active');
+    function setStyle(style, btn) {
+      document.querySelectorAll('.control-btn').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
       
       const styles = {
         cartoon: {cartoon: {color: 'spectrum'}},
