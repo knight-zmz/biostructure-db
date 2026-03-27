@@ -55,9 +55,11 @@ jobs:
       uses: easingthemes/ssh-deploy@v4.1.4
       env:
         SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
-        ARGS: "-rltgoDzvO --delete --exclude='node_modules' --exclude='.git'"
+        ARGS: "-rltgoDzvO --delete --exclude='node_modules' --exclude='.git' --exclude='coverage'"
         SOURCE: "."
         REMOTE_HOST: ${{ secrets.DEPLOY_HOST }}
+        REMOTE_USER: root
+        REMOTE_PORT: ${{ secrets.DEPLOY_PORT || 22 }}
         REMOTE_USER: ${{ secrets.DEPLOY_USER }}
         REMOTE_PORT: "22"
         TARGET: "/var/www/myapp"

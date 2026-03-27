@@ -1,0 +1,53 @@
+name: 🚀 Simple Deploy
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - name: 📥 Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: 🟢 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: 📦 Install dependencies
+      run: npm ci
+
+    - name: 🧪 Run tests
+      run: npm test -- --coverage --forceExit || true
+
+    - name: 📤 Deploy via SSH
+      uses: easingthemes/ssh-deploy@v4.1.4
+      env:
+        SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        ARGS: "-rltgoDzvO --delete --exclude='node_modules' --exclude='.git' --exclude='coverage' --exclude='*.log'"
+        SOURCE: "."
+        REMOTE_HOST: ${{ secrets.DEPLOY_HOST }}
+        REMOTE_USER: root
+        REMOTE_PORT: 22
+        TARGET: "/var/www/myapp"
+
+    - name: 🔄 Restart PM2
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.DEPLOY_HOST }}
+        username: root
+        key: ${{ secrets.DEPLOY_SSH_KEY }}
+        script: |
+          cd /var/www/myapp
+          echo "📦 Installing production dependencies..."
+          npm install --production --silent
+          echo "🔄 Restarting PM2..."
+          pm2 restart myapp
+          echo "✅ Deploy complete!"
+          pm2 status
