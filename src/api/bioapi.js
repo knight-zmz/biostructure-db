@@ -522,3 +522,28 @@ router.get('/search/ligand', async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 });
+
+/**
+ * 19. 健康检查端点
+ */
+router.get('/health', async (req, res) => {
+  try {
+    const dbCheck = await pool.query('SELECT 1');
+    const structureCount = await pool.query('SELECT COUNT(*) FROM structures');
+    
+    res.json({
+      success: true,
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      database: 'connected',
+      structures: parseInt(structureCount.rows[0].count),
+      uptime: process.uptime()
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      status: 'unhealthy',
+      error: err.message
+    });
+  }
+});
