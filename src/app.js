@@ -34,6 +34,104 @@ app.use(express.static(publicPath, {
   lastModified: true
 }));
 
+// 健康检查端点 (顶层)
+app.get('/api/health', async (req, res) => {
+  try {
+    const dbCheck = await pool.query('SELECT 1');
+    const structureCount = await pool.query('SELECT COUNT(*) FROM structures');
+    res.json({
+      success: true,
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      database: 'connected',
+      structures: parseInt(structureCount.rows[0].count),
+      uptime: process.uptime(),
+      memory: process.memoryUsage(),
+      version: '1.0.0'
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, status: 'unhealthy', error: err.message });
+  }
+});
+
+// API 文档端点
+app.get('/api/docs', (req, res) => {
+  res.json({
+    success: true,
+    version: '1.0.0',
+    baseUrl: '/api',
+    endpoints: [
+      { method: 'GET', path: '/api/health', desc: '健康检查' },
+      { method: 'GET', path: '/api/stats', desc: '统计概览' },
+      { method: 'GET', path: '/api/bio/stats', desc: '统计概览 (Bio)' },
+      { method: 'GET', path: '/api/bio/stats/detailed', desc: '详细统计' },
+      { method: 'GET', path: '/api/bio/info', desc: '数据库信息' },
+      { method: 'GET', path: '/api/structures', desc: '结构列表 (分页/筛选)', params: ['page', 'limit', 'method', 'sort', 'order', 'minRes', 'maxRes'] },
+      { method: 'GET', path: '/api/structures/:pdbId', desc: '结构详情' },
+      { method: 'GET', path: '/api/structures/:pdbId/atoms', desc: '原子坐标', params: ['chain'] },
+      { method: 'GET', path: '/api/structures/:pdbId/residues', desc: '残基序列' },
+      { method: 'GET', path: '/api/structures/:pdbId/secondary-structure', desc: '二级结构' },
+      { method: 'GET', path: '/api/structures/recent/list', desc: '最近沉积', params: ['limit'] },
+      { method: 'GET', path: '/api/search', desc: '搜索结构', params: ['q', 'method', 'minResolution'] },
+      { method: 'GET', path: '/api/search/suggest', desc: '搜索自动补全', params: ['q', 'limit'] },
+      { method: 'POST', path: '/api/structures', desc: '创建/更新结构' },
+      { method: 'POST', path: '/api/import/:pdbId', desc: '从 RCSB PDB 导入' },
+      { method: 'POST', path: '/api/import-samples', desc: '批量导入示例' },
+      { method: 'GET', path: '/api/bio/search/sequence', desc: '序列搜索', params: ['sequence'] },
+      { method: 'GET', path: '/api/bio/structure/:pdbId/full', desc: '完整结构信息' },
+      { method: 'GET', path: '/api/bio/uniprot/:pdbId', desc: 'UniProt 映射' },
+      { method: 'GET', path: '/api/bio/ligands/:pdbId', desc: '配体信息' },
+      { method: 'GET', path: '/api/bio/organism/:name', desc: '按生物体搜索' },
+      { method: 'GET', path: '/api/bio/gene/:name', desc: '按基因搜索' },
+      { method: 'GET', path: '/api/bio/activesite/:pdbId', desc: '活性位点' },
+      { method: 'GET', path: '/api/bio/pfam/:pdbId', desc: 'Pfam 结构域' },
+      { method: 'GET', path: '/api/bio/secondary/:pdbId', desc: '二级结构 (Bio)' },
+      { method: 'GET', path: '/api/bio/search/structure', desc: '通用搜索', params: ['q'] },
+      { method: 'GET', path: '/api/bio/search/ligand', desc: '配体搜索', params: ['name'] },
+      { method: 'GET', path: '/api/bio/health', desc: '健康检查 (Bio)' },
+      { method: 'GET', path: '/api/compare', desc: '结构对比', params: ['pdb1', 'pdb2'] },
+      { method: 'GET', path: '/api/cache/stats', desc: '缓存统计' },
+      { method: 'DELETE', path: '/api/cache/clear', desc: '清除缓存', params: ['pattern'] },
+    ]
+  });
+});
+
+// 结构对比端点
+app.get('/api/compare', cacheMiddleware(300), async (req, res) => {
+  try {
+    const { pdb1, pdb2 } = req.query;
+    if (!pdb1 || !pdb2) {
+      return res.status(400).json({ success: false, error: '需要两个 PDB ID: ?pdb1=XXX&pdb2=YYY' });
+    }
+    const [s1, s2] = await Promise.all([
+      pool.query('SELECT * FROM structure_stats WHERE pdb_id = $1', [pdb1.toUpperCase()]),
+      pool.query('SELECT * FROM structure_stats WHERE pdb_id = $1', [pdb2.toUpperCase()])
+    ]);
+    if (s1.rows.length === 0 || s2.rows.length === 0) {
+      return res.status(404).json({ success: false, error: '一个或多个 PDB ID 未找到' });
+    }
+    const [chains1, chains2] = await Promise.all([
+      pool.query('SELECT * FROM chains WHERE pdb_id = $1', [pdb1.toUpperCase()]),
+      pool.query('SELECT * FROM chains WHERE pdb_id = $1', [pdb2.toUpperCase()])
+    ]);
+    res.json({
+      success: true,
+      data: {
+        structure1: { ...s1.rows[0], chains: chains1.rows },
+        structure2: { ...s2.rows[0], chains: chains2.rows },
+        comparison: {
+          resolutionDiff: (s1.rows[0].resolution && s2.rows[0].resolution) ? Math.abs(s1.rows[0].resolution - s2.rows[0].resolution).toFixed(2) + ' Å' : 'N/A',
+          sameMethod: s1.rows[0].method === s2.rows[0].method,
+          chainCountDiff: Math.abs(parseInt(s1.rows[0].chain_count || 0) - parseInt(s2.rows[0].chain_count || 0)),
+          atomCountDiff: Math.abs(parseInt(s1.rows[0].atom_count || 0) - parseInt(s2.rows[0].atom_count || 0))
+        }
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // 挂载生物信息学 API
 app.use('/api/bio', bioapi);
 

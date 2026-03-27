@@ -177,10 +177,6 @@ router.get('/ligands/:pdbId', async (req, res) => {
 });
 
 /**
- * 7. 统计信息 (增强版)
-});
-
-/**
  * 8. 按生物体搜索
  */
 router.get('/organism/:name', async (req, res) => {
@@ -241,8 +237,6 @@ router.get('/activesite/:pdbId', async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 });
-
-module.exports = router;
 
 /**
  * 11. 获取统计信息
@@ -474,3 +468,5 @@ router.get('/health', async (req, res) => {
     });
   }
 });
+
+module.exports = router;
