@@ -1,14 +1,16 @@
 {
-  "currentTask": "待启动",
-  "completedToday": [
-    "修复前端 UI 错误",
-    "添加搜索功能",
-    "集成 Molstar 3D 可视化",
-    "优化数据库",
-    "GitHub 持续推送",
-    "检查服务状态并优化"
+  "mode": "continuous_optimization",
+  "mission": "改造生物数据库项目，让前端更高级，让后端更稳健，永不停止",
+  "rules": [
+    "学习 GitHub/网页优秀项目，允许代码复用和 git clone",
+    "每次更新后必须 git push",
+    "记录经验教训到记忆文件",
+    "不断 debug，确保前端无 bug，后端无 bug",
+    "优化项目执行流程和配置"
   ],
-  "pendingTasks": [],
-  "lastWorkAt": "2026-03-27T19:40:00+08:00",
-  "workCycles": 7
+  "currentFocus": "前端 UI 改造 + 后端 API 完善",
+  "completedToday": [],
+  "learnings": [],
+  "lastWorkAt": null,
+  "workCycles": 0
 }
