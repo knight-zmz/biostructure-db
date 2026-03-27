@@ -435,7 +435,7 @@ router.get('/search/ligand', async (req, res) => {
     }
     
     const result = await pool.query(`
-      SELECT l.pdb_id, l.ligand_name, l.ligand_type, 
+      SELECT l.pdb_id, l.ligand_name, l.formula, l.weight,
              s.title, s.resolution, s.method
       FROM ligands l
       LEFT JOIN structures s ON l.pdb_id = s.pdb_id
