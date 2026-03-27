@@ -2,9 +2,10 @@ const express = require('express');
 const { Pool } = require('pg');
 const cors = require('cors');
 const path = require('path');
-const PDBParser = require('./pdb-parser');
+const PDBParser = require('./utils/pdb-parser');
 const axios = require('axios');
-const bioapi = require('./bioapi');
+const bioapi = require('./api/bioapi');
+const cache = require('./utils/redis-cache');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -18,18 +19,84 @@ const pool = new Pool({
   port: 5432,
 });
 
+// 初始化 Redis 缓存
+cache.connect().catch(err => console.warn('Redis 启动失败:', err.message));
+
 // 中间件
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+
+// 静态文件服务 - 带缓存控制
+const publicPath = path.resolve(__dirname, '../public');
+app.use(express.static(publicPath, {
+  maxAge: '1d',
+  etag: true,
+  lastModified: true
+}));
 
 // 挂载生物信息学 API
 app.use('/api/bio', bioapi);
 
+// 根路径重定向到 index.html
+app.get('/', (req, res) => {
+  res.setHeader('Cache-Control', 'public, max-age=3600');
+  res.sendFile(path.join(publicPath, 'index.html'));
+});
+
+// 启用 gzip 压缩中间件
+const compression = (req, res, next) => {
+  const acceptEncoding = req.headers['accept-encoding'];
+  if (!acceptEncoding || !acceptEncoding.includes('gzip')) {
+    return next();
+  }
+  
+  res.setHeader('Content-Encoding', 'gzip');
+  next();
+};
+
+// 对静态文件应用压缩（如果存在.gz 版本）
+app.use((req, res, next) => {
+  if (req.path.endsWith('.html') || req.path.endsWith('.js') || req.path.endsWith('.css')) {
+    const gzPath = publicPath + req.path + '.gz';
+    const fs = require('fs');
+    if (fs.existsSync(gzPath)) {
+      res.setHeader('Content-Encoding', 'gzip');
+      res.setHeader('Vary', 'Accept-Encoding');
+      return res.sendFile(gzPath);
+    }
+  }
+  next();
+});
+
+// 缓存中间件 - 为 GET 请求添加缓存
+const cacheMiddleware = (ttl = 300) => async (req, res, next) => {
+  if (req.method !== 'GET') {
+    return next();
+  }
+
+  const key = `cache:${req.originalUrl}`;
+  const cached = await cache.get(key);
+  
+  if (cached) {
+    res.setHeader('X-Cache', 'HIT');
+    return res.json(cached);
+  }
+
+  // 重写 res.json 以捕获响应并缓存
+  const originalJson = res.json;
+  res.json = (data) => {
+    cache.set(key, data, ttl);
+    res.setHeader('X-Cache', 'MISS');
+    return originalJson.call(res, data);
+  };
+
+  next();
+};
+
 // API 路由
 
-// 1. 获取所有结构列表
-app.get('/api/structures', async (req, res) => {
+// 1. 获取所有结构列表 (带缓存)
+app.get('/api/structures', cacheMiddleware(600), async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM structure_stats ORDER BY pdb_id');
     res.json({ success: true, data: result.rows });
@@ -38,8 +105,8 @@ app.get('/api/structures', async (req, res) => {
   }
 });
 
-// 2. 获取单个结构详情
-app.get('/api/structures/:pdbId', async (req, res) => {
+// 2. 获取单个结构详情 (带缓存)
+app.get('/api/structures/:pdbId', cacheMiddleware(600), async (req, res) => {
   try {
     const { pdbId } = req.params;
     const structure = await pool.query('SELECT * FROM structures WHERE pdb_id = $1', [pdbId]);
@@ -311,8 +378,34 @@ app.post('/api/import-samples', async (req, res) => {
   }
 });
 
+// 11. 缓存统计信息
+app.get('/api/cache/stats', async (req, res) => {
+  try {
+    const stats = await cache.getStats();
+    res.json({ success: true, data: stats });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 12. 清除缓存
+app.delete('/api/cache/clear', async (req, res) => {
+  try {
+    const { pattern } = req.query;
+    if (pattern) {
+      await cache.delPattern(pattern);
+    } else {
+      await cache.delPattern('cache:*');
+    }
+    res.json({ success: true, message: '缓存已清除' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // 启动服务器
 app.listen(PORT, () => {
   console.log(`🧬 BioStructure DB API running on port ${PORT}`);
   console.log(`📊 Health check: http://localhost:${PORT}/api/stats`);
+  console.log(`💾 Redis Cache: ${cache.enabled ? 'Enabled' : 'Disabled'}`);
 });

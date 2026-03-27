@@ -1,0 +1,7 @@
+
+# 自动忽略
+node_modules/
+coverage/
+*.log
+hourly_reports.log
+AUTO_IMPROVE_LOG.md
