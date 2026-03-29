@@ -1,7 +1,7 @@
 # 📊 Project State - 项目状态盘点
 
 **生成时间**: 2026-03-29 22:56 CST  
-**更新时间**: 2026-03-30 00:38 CST  
+**更新时间**: 2026-03-30 00:46 CST  
 **项目**: biostructure-db  
 **版本**: 1.0.0  
 **当前阶段**: 部署闭环已建立，进入工程完善阶段
@@ -93,7 +93,7 @@ biostructure-db/
 │   └── ...
 ├── .github/workflows/
 │   └── deploy.yml             # GitHub Actions 部署
-├── ops/                       # 运维文档 (13 个文件)
+├── ops/                       # 运维文档 (17 个文件)
 ├── .env                       # 环境变量配置 (不提交)
 ├── .env.example               # 配置模板 (可提交)
 ├── ecosystem.config.js        # PM2 配置 (使用 dotenv)
@@ -234,13 +234,13 @@ module.exports = {
 
 **当前进程**:
 ```
-│ id │ name  │ status  │ uptime │ restarts │
-│ 0  │ myapp │ online  │ 16m    │ 1        │
+│ id │ name  │ status │ uptime │ restarts │
+│ 0  │ myapp │ online │ 2m     │ 4        │
 ```
 
 **健康检查**:
 ```json
-{"success":true,"status":"healthy","database":"connected"}
+{"success":true,"status":"healthy","database":"connected","uptime":123s}
 ```
 
 ---
@@ -294,8 +294,11 @@ module.exports = {
 | `gap_analysis.md` | 缺口分析 | ✅ 完成 |
 | `install_order.md` | 安装顺序 | ✅ 完成 |
 | `minimum_startup_path.md` | 启动路径 | ✅ 完成 |
+| `rsync 安装与部署闭环验证.md` | rsync 安装验证 | ✅ 完成 |
+| `部署闭环故障定位报告.md` | 故障定位 | ✅ 完成 |
+| `文档一致性修正报告.md` | 文档修正 | ✅ 完成 |
 
-**总计**: 13 个文档
+**总计**: 17 个文档
 
 ---
 
@@ -317,13 +320,13 @@ module.exports = {
 |------|------|------|
 | 代码完整性 | ✅ 完整 | 5/5 |
 | 依赖安装 | ✅ 已完成 | 5/5 |
-| 文档完整性 | ✅ 丰富 (13 个 ops 文档) | 5/5 |
+| 文档完整性 | ✅ 丰富 (17 个 ops 文档) | 5/5 |
 | 测试覆盖 | ⚠️ 基础 (2 个单元测试) | 3/5 |
 | 环境就绪 | ✅ PostgreSQL+Redis+PM2 | 5/5 |
 | 配置规范化 | ✅ 环境变量 + 无硬编码 | 5/5 |
-| 部署链路 | 🔴 候选原因待定位 | 3/5 |
+| 部署链路 | ✅ 已验证并复验 | 5/5 |
 
-**综合评分**: 31/35 (89%)
+**综合评分**: 33/35 (94%)
 
 ---
 
@@ -383,24 +386,10 @@ module.exports = {
 5. **历史文档归档**
    - 根目录 30+ 历史文档归档到 `docs/archive/`
    - 优先级：低
-pm2 describe myapp | grep restarts  # 应从 1 变为 2
-```
-
-### 🟡 P1: 文档同步
-
-```bash
-cp /home/admin/biostructure-db/ops/*.md /var/www/myapp/ops/
-```
-
-### 🟡 P1: 历史文档归档
-
-```bash
-mkdir -p docs/archive
-mv DEPLOY_*.md UPGRADE_*.md WEEKLY_PLAN.md docs/archive/
-```
 
 ---
 
-**最后更新**: 2026-03-30 00:00 CST  
-**状态**: ✅ 文档一致性已收敛  
-**最大阻塞**: 🔴 GitHub Secrets 配置待用户完成
+**最后更新**: 2026-03-30 00:46 CST  
+**状态**: ✅ 部署闭环已建立并复验通过  
+**最大阻塞**: ✅ 无阻塞项  
+**文档一致性**: ✅ 已收敛
