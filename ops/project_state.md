@@ -28,38 +28,53 @@
 
 ### 0.2 未完成闭环
 
-| 闭环项 | 状态 | 阻塞原因 |
-|--------|------|----------|
-| GitHub Secrets 配置 | 🔴 尚未解决 | 需用户在 GitHub Settings 配置 |
-| GitHub Actions 完整部署 | 🔴 尚未解决 | 依赖 Secrets 配置 |
-| 自动部署后 PM2 重启 | 🔴 尚未解决 | 依赖上述两项 |
+| 闭环项 | 状态 | 说明 |
+|--------|------|------|
+| GitHub Actions 完整部署 | 🔴 尚未解决 | 部署闭环验证失败，候选原因待定位 |
+| 自动部署后 PM2 重启 | 🔴 尚未解决 | 依赖上述 |
 
 ### 0.3 当前最大阻塞
 
-**🔴 GitHub Secrets 未配置**
+**🔴 GitHub Actions 部署闭环验证失败**
 
-**需要配置的 Secrets**:
+**已知证据**:
+1. ✅ 测试文件已推送到 GitHub (`git push` 成功，commit `9121d66`)
+2. ✅ 测试文件存在于生产目录 (`/var/www/myapp/.github_deploy_test.md` 存在)
+3. ✅ SSH 公钥已添加到服务器 (`~/.ssh/authorized_keys` 包含部署公钥)
+4. ❌ PM2 无自动重启记录 (restarts=1, 均为手动重启)
+5. ❌ 无法直接查看 GitHub Actions 执行日志
 
-| Secret 名 | 用途 | 获取方式 |
-|----------|------|----------|
-| `DEPLOY_SSH_KEY` | SSH 私钥 | `cat ~/.ssh/biostructure_db_deploy` |
-| `DEPLOY_HOST` | 服务器公网 IP | 阿里云 ECS 控制台 |
-| `DEPLOY_USER` | SSH 用户 | `admin` (固定值) |
+**无法直接确认的事项** (证据边界):
+- 🔴 GitHub Secrets 配置状态 (无法读取 GitHub Settings 页面)
+- 🔴 GitHub Actions workflow 是否实际触发 (无法访问 Actions 页面)
+- 🔴 Deploy via SSH 步骤是否执行 (无服务器端 SSH 连接日志)
+- 🔴 Restart PM2 步骤是否执行 (无相关日志)
 
-**已修复项**:
-- ✅ SSH 公钥已添加到 `~/.ssh/authorized_keys` (2026-03-29 23:51)
+**候选原因列表** (按证据强弱排序):
 
-**影响**: GitHub Actions 无法 SSH 连接到服务器，部署流程失败
+| 候选原因 | 可能性 | 现有证据 | 验证方法 |
+|----------|--------|----------|----------|
+| SSH 连接失败 | 🟡 中 | 公钥已授权，但无法确认 GitHub 端私钥匹配 | 查看 Actions 日志 |
+| Secrets 值错误 | 🟡 中 | 无法直接确认 | 查看 Actions 日志 |
+| workflow 未触发 | 🟢 低 | 推送成功，应触发 | 查看 Actions 页面 |
+| Deploy 步骤失败 | 🟡 中 | 文件存在但 PM2 未重启 | 查看 Actions 日志 |
+| PM2 重启命令失败 | 🟢 低 | PM2 正常运行 | 查看 PM2 日志 |
 
-**配置位置**: https://github.com/knight-zmz/biostructure-db/settings/secrets/actions
+**影响**: 无法确定部署闭环是否真正形成
+
+**下一步最小化验证**:
+1. 用户查看 GitHub Actions 页面，确认 workflow 是否触发
+2. 用户查看 Deploy via SSH 步骤日志
+3. 用户查看 Restart PM2 步骤日志
+4. 根据日志定位具体失败环节
 
 ### 0.4 下一轮优先事项
 
-1. 🔴 用户配置 GitHub Secrets (DEPLOY_SSH_KEY, DEPLOY_HOST, DEPLOY_USER)
-2. 🔴 重新触发 GitHub Actions 部署测试
-3. 🔴 验证 PM2 自动重启
-4. 🟡 同步所有文档到生产目录
-5. 🟡 清理历史过时文档
+1. 🔴 用户查看 GitHub Actions 日志 (确认 workflow 触发状态)
+2. 🔴 用户查看 Deploy via SSH 步骤日志 (确认 SSH 连接状态)
+3. 🔴 用户查看 Restart PM2 步骤日志 (确认 PM2 重启状态)
+4. 🔴 根据日志定位具体失败原因
+5. 🟡 修复确认后重新验证部署闭环
 
 ---
 
@@ -273,10 +288,13 @@ module.exports = {
 
 | 验证项 | 状态 | 说明 |
 |--------|------|------|
-| workflow 文件 | ✅ 已配置 | `.github/workflows/deploy.yml` |
-| SSH 公钥授权 | ✅ 已修复 | 已添加到 authorized_keys |
-| Secrets 配置 | 🔴 未配置 | 需用户手动配置 |
-| 部署闭环 | 🔴 未验证 | 依赖 Secrets |
+| workflow 文件 | ✅ 已验证 | `.github/workflows/deploy.yml` 存在 |
+| SSH 公钥授权 | ✅ 已验证 | 已添加到 `~/.ssh/authorized_keys` |
+| Secrets 配置 | 🔴 无法直接确认 | 无法读取 GitHub Settings 页面 |
+| workflow 触发 | 🔴 无法直接确认 | 无法访问 Actions 页面 |
+| Deploy via SSH | 🔴 无法直接确认 | 无服务器端 SSH 连接日志 |
+| Restart PM2 | 🔴 无法直接确认 | PM2 无自动重启记录 |
+| 部署闭环 | 🔴 尚未解决 | 候选原因待定位 |
 
 ---
 
@@ -324,7 +342,7 @@ module.exports = {
 | 测试覆盖 | ⚠️ 基础 (2 个单元测试) | 3/5 |
 | 环境就绪 | ✅ PostgreSQL+Redis+PM2 | 5/5 |
 | 配置规范化 | ✅ 环境变量 + 无硬编码 | 5/5 |
-| 部署链路 | ⏳ Secrets 待配置 | 3/5 |
+| 部署链路 | 🔴 候选原因待定位 | 3/5 |
 
 **综合评分**: 31/35 (89%)
 
@@ -334,7 +352,7 @@ module.exports = {
 
 | 风险 | 等级 | 状态 |
 |------|------|------|
-| GitHub Secrets 未配置 | 🔴 高 | 阻塞部署闭环 |
+| GitHub Actions 部署闭环失败 | 🔴 高 | 候选原因待定位 |
 | 无 Nginx 反向代理 | 🟢 低 | 可选，非必需 |
 | 无自动备份 | 🟡 中 | 建议配置 |
 | 无监控告警 | 🟡 中 | 建议配置 |
@@ -351,24 +369,24 @@ module.exports = {
 
 ## 12. 下一步优先事项
 
-### 🔴 P0: 用户配置 GitHub Secrets
+### 🔴 P0: 用户查看 GitHub Actions 日志
 
-访问 https://github.com/knight-zmz/biostructure-db/settings/secrets/actions 配置:
-- `DEPLOY_SSH_KEY` = `cat ~/.ssh/biostructure_db_deploy`
-- `DEPLOY_HOST` = 服务器公网 IP
-- `DEPLOY_USER` = `admin`
+访问 https://github.com/knight-zmz/biostructure-db/actions 确认:
+1. workflow 是否触发 (查看最新 run)
+2. Deploy via SSH 步骤是否成功 (查看日志)
+3. Restart PM2 步骤是否执行 (查看日志)
+4. 如有错误，记录具体错误信息
 
-### 🔴 P0: 验证部署闭环
+### 🔴 P0: 根据日志定位失败原因
 
-```bash
-# 推送测试提交
-echo "# Deploy Test $(date)" > .github_deploy_test_3.md
-git add . && git commit -m "test: deploy verification 3" && git push
+候选原因:
+- SSH 连接失败 (私钥/公钥不匹配)
+- Secrets 值错误 (DEPLOY_HOST/DEPLOY_USER 错误)
+- workflow 未触发 (分支不匹配)
+- Deploy 步骤失败 (路径/权限问题)
+- PM2 重启命令失败 (进程名不匹配)
 
-# 等待 90 秒
-sleep 90
-
-# 验证 PM2 重启
+### 🟡 P1: 修复后重新验证部署闭环
 pm2 describe myapp | grep restarts  # 应从 1 变为 2
 ```
 
