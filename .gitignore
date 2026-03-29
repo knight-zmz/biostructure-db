@@ -5,3 +5,6 @@ coverage/
 *.log
 hourly_reports.log
 AUTO_IMPROVE_LOG.md
+
+# 环境变量配置
+.env

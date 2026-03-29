@@ -253,35 +253,35 @@ CREATE TABLE IF NOT EXISTS sequence_index (
 -- ========== 创建索引 ==========
 
 -- 结构表索引
-CREATE INDEX idx_structures_method ON structures(method);
-CREATE INDEX idx_structures_organism ON structures(organism_scientific_name);
-CREATE INDEX idx_structures_gene ON structures(gene_name);
-CREATE INDEX idx_structures_uniprot ON structures USING GIN(uniprot_ids);
-CREATE INDEX idx_structures_keywords ON structures USING GIN(keywords);
-CREATE INDEX idx_structures_deposit_date ON structures(deposit_date);
+CREATE INDEX IF NOT EXISTS idx_structures_method ON structures(method);
+CREATE INDEX IF NOT EXISTS idx_structures_organism ON structures(organism_scientific_name);
+CREATE INDEX IF NOT EXISTS idx_structures_gene ON structures(gene_name);
+CREATE INDEX IF NOT EXISTS idx_structures_uniprot ON structures USING GIN(uniprot_ids);
+CREATE INDEX IF NOT EXISTS idx_structures_keywords ON structures USING GIN(keywords);
+CREATE INDEX IF NOT EXISTS idx_structures_deposit_date ON structures(deposit_date);
 
 -- 链和残基索引
-CREATE INDEX idx_polypeptides_pdb ON polypeptides(pdb_id);
-CREATE INDEX idx_polypeptides_uniprot ON polypeptides(uniprot_id);
-CREATE INDEX idx_residues_pdb_chain ON residues(pdb_id, chain_id);
-CREATE INDEX idx_atoms_pdb_chain ON atoms(pdb_id, chain_id);
-CREATE INDEX idx_atoms_residue ON atoms(pdb_id, residue_num);
+CREATE INDEX IF NOT EXISTS idx_polypeptides_pdb ON polypeptides(pdb_id);
+CREATE INDEX IF NOT EXISTS idx_polypeptides_uniprot ON polypeptides(uniprot_id);
+CREATE INDEX IF NOT EXISTS idx_residues_pdb_chain ON residues(pdb_id, chain_id);
+CREATE INDEX IF NOT EXISTS idx_atoms_pdb_chain ON atoms(pdb_id, chain_id);
+CREATE INDEX IF NOT EXISTS idx_atoms_residue ON atoms(pdb_id, residue_num);
 
 -- 功能注释索引
-CREATE INDEX idx_active_sites_pdb ON active_sites(pdb_id);
-CREATE INDEX idx_ligands_pdb ON ligands(pdb_id);
-CREATE INDEX idx_ligands_name ON ligands(ligand_name);
-CREATE INDEX idx_ptms_pdb ON ptms(pdb_id);
+CREATE INDEX IF NOT EXISTS idx_active_sites_pdb ON active_sites(pdb_id);
+CREATE INDEX IF NOT EXISTS idx_ligands_pdb ON ligands(pdb_id);
+CREATE INDEX IF NOT EXISTS idx_ligands_name ON ligands(ligand_name);
+CREATE INDEX IF NOT EXISTS idx_ptms_pdb ON ptms(pdb_id);
 
 -- 外部关联索引
-CREATE INDEX idx_uniprot_pdb ON uniprot_mappings(pdb_id);
-CREATE INDEX idx_uniprot_accession ON uniprot_mappings(uniprot_accession);
-CREATE INDEX idx_pfam_pdb ON pfam_domains(pdb_id);
-CREATE INDEX idx_pfam_accession ON pfam_domains(pfam_accession);
+CREATE INDEX IF NOT EXISTS idx_uniprot_pdb ON uniprot_mappings(pdb_id);
+CREATE INDEX IF NOT EXISTS idx_uniprot_accession ON uniprot_mappings(uniprot_accession);
+CREATE INDEX IF NOT EXISTS idx_pfam_pdb ON pfam_domains(pdb_id);
+CREATE INDEX IF NOT EXISTS idx_pfam_accession ON pfam_domains(pfam_accession);
 
 -- 序列索引
-CREATE INDEX idx_sequence_pdb ON sequence_index(pdb_id);
-CREATE INDEX idx_sequence_hash ON sequence_index(sequence_hash);
+CREATE INDEX IF NOT EXISTS idx_sequence_pdb ON sequence_index(pdb_id);
+CREATE INDEX IF NOT EXISTS idx_sequence_hash ON sequence_index(sequence_hash);
 
 -- ========== 创建视图 ==========
 

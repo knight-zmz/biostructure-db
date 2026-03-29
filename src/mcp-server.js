@@ -5,12 +5,13 @@
 
 const { Pool } = require('pg');
 
+// 数据库连接池 (从环境变量读取)
 const pool = new Pool({
-  user: 'myapp_user',
-  host: 'localhost',
-  database: 'myapp',
-  password: 'MyApp@2026',
-  port: 5432,
+  user: process.env.DB_USER || 'myapp_user',
+  host: process.env.DB_HOST || '127.0.0.1',
+  database: process.env.DB_NAME || 'myapp',
+  password: process.env.DB_PASSWORD || 'MyApp@2026',
+  port: process.env.DB_PORT || 5432,
 });
 
 // MCP 工具定义
