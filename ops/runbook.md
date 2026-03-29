@@ -59,7 +59,158 @@ curl http://localhost:3000/api/health
 
 ---
 
-## 2. 服务管理
+## 3. 失败恢复与回滚
+
+### 3.1 应用启动失败
+
+**症状**: `pm2 status` 显示 `errored` 或 `stopped`
+
+**诊断步骤**:
+```bash
+# 1. 查看日志
+pm2 logs myapp --lines 50
+
+# 2. 检查端口占用
+lsof -i :3000
+
+# 3. 检查依赖
+cd /var/www/myapp && npm ls --depth=0
+
+# 4. 手动启动测试
+node src/app.js
+```
+
+**恢复步骤**:
+```bash
+# 1. 停止失败进程
+pm2 stop myapp
+
+# 2. 重新安装依赖
+cd /var/www/myapp
+npm install --production
+
+# 3. 检查 .env 配置
+cat .env
+
+# 4. 重启应用
+pm2 start ecosystem.config.js
+pm2 logs myapp --lines 20
+```
+
+---
+
+### 3.2 数据库连接失败
+
+**症状**: `/api/health` 返回 `"database": "disconnected"`
+
+**诊断步骤**:
+```bash
+# 1. 检查 PostgreSQL 状态
+sudo systemctl status postgresql
+
+# 2. 检查监听端口
+ss -tlnp | grep 5432
+
+# 3. 测试连接
+psql -U myapp_user -h 127.0.0.1 -d myapp -c "SELECT 1"
+```
+
+**恢复步骤**:
+```bash
+# 1. 重启 PostgreSQL
+sudo systemctl restart postgresql
+
+# 2. 检查 pg_hba.conf
+sudo cat /var/lib/pgsql/data/pg_hba.conf | grep -v "^#"
+
+# 3. 重新初始化 (如需要)
+bash scripts/init-db.sh
+```
+
+---
+
+### 3.3 GitHub Actions 部署失败
+
+**症状**: Workflow 显示红色 ❌
+
+**诊断步骤**:
+1. 访问 https://github.com/knight-zmz/biostructure-db/actions
+2. 点击失败的 workflow run
+3. 查看失败步骤日志
+
+**常见问题**:
+
+| 错误 | 原因 | 解决方案 |
+|------|------|----------|
+| SSH 连接失败 | Secrets 配置错误 | 检查 `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY` |
+| PM2 重启失败 | 进程名不匹配 | 确认 `pm2 restart myapp` 中的名称 |
+| 权限错误 | SSH 密钥权限 | 验证密钥格式和公钥已添加到 authorized_keys |
+
+**手动回滚**:
+```bash
+# 1. 查看 Git 历史
+cd /var/www/myapp
+git log --oneline -5
+
+# 2. 回滚到上一版本
+git reset --hard <上一版本 commit>
+
+# 3. 重新安装依赖
+npm install --production
+
+# 4. 重启应用
+pm2 restart myapp
+```
+
+---
+
+### 3.4 配置错误恢复
+
+**症状**: 应用启动后立即崩溃
+
+**诊断步骤**:
+```bash
+# 1. 查看 PM2 日志
+pm2 logs myapp --lines 30
+
+# 2. 检查 .env 文件
+cat /var/www/myapp/.env
+
+# 3. 验证环境变量
+node -e "require('dotenv').config(); console.log(process.env.DB_PASSWORD ? 'DB_PASSWORD OK' : 'DB_PASSWORD MISSING')"
+```
+
+**恢复步骤**:
+```bash
+# 1. 从备份恢复 .env
+cp /var/www/myapp/.env.example /var/www/myapp/.env
+# 然后编辑填入正确配置
+
+# 2. 重启应用
+pm2 restart myapp --update-env
+```
+
+---
+
+### 3.5 数据库回滚
+
+**场景**: schema 更新导致问题
+
+**步骤**:
+```bash
+# 1. 备份当前数据
+pg_dump -U myapp_user -h 127.0.0.1 myapp > backup_$(date +%Y%m%d_%H%M%S).sql
+
+# 2. 恢复 schema
+psql -U myapp_user -h 127.0.0.1 -d myapp -f src/db/schema.sql
+
+# 3. 验证
+psql -U myapp_user -h 127.0.0.1 -d myapp -c '\dt'
+```
+
+---
+
+## 4. 服务管理
 
 ### PostgreSQL
 
