@@ -78,25 +78,25 @@
 ### 8. 配置 GitHub Actions 部署
 - [x] 创建 deploy.yml 工作流文件
 - [x] SSH 公钥已添加到服务器 authorized_keys
-- [ ] 确认 `DEPLOY_SSH_KEY` Secret (🔴 无法直接确认)
-- [ ] 确认 `DEPLOY_HOST` Secret (🔴 无法直接确认)
-- [ ] 确认 `DEPLOY_USER` Secret (🔴 无法直接确认)
-- [ ] 查看 workflow 是否触发 (🔴 无法直接确认)
-- [ ] 查看 Deploy via SSH 步骤日志 (🔴 无法直接确认)
-- [ ] 查看 Restart PM2 步骤日志 (🔴 无法直接确认)
-- [ ] 验证自动部署流程
+- [x] workflow 已触发 (Deploy via SSH 步骤已执行)
+- [x] SSH 连接已建立 (日志确认)
+- [x] 安装 rsync (✅ 已安装 3.1.3)
+- [x] 验证 Deploy via SSH 步骤通过
+- [x] 验证 Restart PM2 步骤执行
+- [x] 验证自动部署流程
 
 **验收标准**: push 到 main 分支后自动部署并重启 PM2  
-**状态**: 🔴 **尚未解决** (部署闭环验证失败，候选原因待定位)
+**状态**: ✅ **已完成** (2026-03-30 00:29)
 
-**候选原因** (按可能性排序):
-1. SSH 连接失败 (私钥/公钥不匹配)
-2. Secrets 值错误 (DEPLOY_HOST/DEPLOY_USER 错误)
-3. workflow 未触发 (分支不匹配)
-4. Deploy 步骤失败 (路径/权限问题)
-5. PM2 重启命令失败 (进程名不匹配)
+**验证证据**:
+- PM2 restarts: 1→2
+- PM2 uptime: 54s (新启动)
+- PM2 日志: 00:29:33 启动记录
+- 测试文件: `/var/www/myapp/.github_deploy_test_2.md` 存在
+- 健康检查: `/api/health` 返回 healthy
 
-**下一步**: 用户查看 GitHub Actions 日志定位具体失败环节
+**已解决阻塞**:
+- ✅ 服务器缺少 rsync (已安装 3.1.3)
 
 ### 9. 规范化 pg_hba.conf 配置
 - [x] 创建 scripts/configure-pg_hba.sh

@@ -30,51 +30,24 @@
 
 | 闭环项 | 状态 | 说明 |
 |--------|------|------|
-| GitHub Actions 完整部署 | 🔴 尚未解决 | 部署闭环验证失败，候选原因待定位 |
-| 自动部署后 PM2 重启 | 🔴 尚未解决 | 依赖上述 |
+| GitHub Actions 完整部署 | ✅ 已验证 | rsync 安装后验证通过 |
+| 自动部署后 PM2 重启 | ✅ 已验证 | restarts=2 |
 
 ### 0.3 当前最大阻塞
 
-**🔴 GitHub Actions 部署闭环验证失败**
+**✅ 无阻塞项**
 
-**已知证据**:
-1. ✅ 测试文件已推送到 GitHub (`git push` 成功，commit `9121d66`)
-2. ✅ 测试文件存在于生产目录 (`/var/www/myapp/.github_deploy_test.md` 存在)
-3. ✅ SSH 公钥已添加到服务器 (`~/.ssh/authorized_keys` 包含部署公钥)
-4. ❌ PM2 无自动重启记录 (restarts=1, 均为手动重启)
-5. ❌ 无法直接查看 GitHub Actions 执行日志
-
-**无法直接确认的事项** (证据边界):
-- 🔴 GitHub Secrets 配置状态 (无法读取 GitHub Settings 页面)
-- 🔴 GitHub Actions workflow 是否实际触发 (无法访问 Actions 页面)
-- 🔴 Deploy via SSH 步骤是否执行 (无服务器端 SSH 连接日志)
-- 🔴 Restart PM2 步骤是否执行 (无相关日志)
-
-**候选原因列表** (按证据强弱排序):
-
-| 候选原因 | 可能性 | 现有证据 | 验证方法 |
-|----------|--------|----------|----------|
-| SSH 连接失败 | 🟡 中 | 公钥已授权，但无法确认 GitHub 端私钥匹配 | 查看 Actions 日志 |
-| Secrets 值错误 | 🟡 中 | 无法直接确认 | 查看 Actions 日志 |
-| workflow 未触发 | 🟢 低 | 推送成功，应触发 | 查看 Actions 页面 |
-| Deploy 步骤失败 | 🟡 中 | 文件存在但 PM2 未重启 | 查看 Actions 日志 |
-| PM2 重启命令失败 | 🟢 低 | PM2 正常运行 | 查看 PM2 日志 |
-
-**影响**: 无法确定部署闭环是否真正形成
-
-**下一步最小化验证**:
-1. 用户查看 GitHub Actions 页面，确认 workflow 是否触发
-2. 用户查看 Deploy via SSH 步骤日志
-3. 用户查看 Restart PM2 步骤日志
-4. 根据日志定位具体失败环节
+**已解决**:
+- ✅ 服务器缺少 rsync (已安装 3.1.3)
+- ✅ GitHub Actions 部署闭环 (已验证)
+- ✅ PM2 自动重启 (restarts=2)
 
 ### 0.4 下一轮优先事项
 
-1. 🔴 用户查看 GitHub Actions 日志 (确认 workflow 触发状态)
-2. 🔴 用户查看 Deploy via SSH 步骤日志 (确认 SSH 连接状态)
-3. 🔴 用户查看 Restart PM2 步骤日志 (确认 PM2 重启状态)
-4. 🔴 根据日志定位具体失败原因
-5. 🟡 修复确认后重新验证部署闭环
+1. 🟢 可选：升级 Node.js 版本 (20→22)
+2. 🟢 可选：配置 Nginx 反向代理
+3. 🟢 可选：配置自动备份
+4. 🟢 可选：配置监控告警
 
 ---
 
@@ -290,11 +263,11 @@ module.exports = {
 |--------|------|------|
 | workflow 文件 | ✅ 已验证 | `.github/workflows/deploy.yml` 存在 |
 | SSH 公钥授权 | ✅ 已验证 | 已添加到 `~/.ssh/authorized_keys` |
-| Secrets 配置 | 🔴 无法直接确认 | 无法读取 GitHub Settings 页面 |
-| workflow 触发 | 🔴 无法直接确认 | 无法访问 Actions 页面 |
-| Deploy via SSH | 🔴 无法直接确认 | 无服务器端 SSH 连接日志 |
-| Restart PM2 | 🔴 无法直接确认 | PM2 无自动重启记录 |
-| 部署闭环 | 🔴 尚未解决 | 候选原因待定位 |
+| workflow 触发 | ✅ 已验证 | Deploy via SSH 步骤已执行 |
+| SSH 连接 | ✅ 已验证 | SSH 已建立 (日志确认) |
+| Deploy via SSH | ✅ 已验证 | rsync 3.1.3 已安装，部署成功 |
+| Restart PM2 | ✅ 已验证 | PM2 restarts=2 |
+| 部署闭环 | ✅ 已验证 | 完整流程成功执行 |
 
 ---
 
@@ -352,7 +325,7 @@ module.exports = {
 
 | 风险 | 等级 | 状态 |
 |------|------|------|
-| GitHub Actions 部署闭环失败 | 🔴 高 | 候选原因待定位 |
+| Node.js 20 deprecation 警告 | 🟢 低 | 当前为警告，非阻塞 |
 | 无 Nginx 反向代理 | 🟢 低 | 可选，非必需 |
 | 无自动备份 | 🟡 中 | 建议配置 |
 | 无监控告警 | 🟡 中 | 建议配置 |
@@ -364,29 +337,33 @@ module.exports = {
 - ✅ SSH 公钥未授权 (已修复)
 - ✅ pg_hba.conf 手动配置 (已脚本化)
 - ✅ 配置无 .env 文件 (已创建)
+- ✅ GitHub Secrets 配置 (SSH 已连接，说明配置正确)
+- ✅ 服务器缺少 rsync (已安装 3.1.3)
+- ✅ GitHub Actions 部署闭环 (已验证)
 
 ---
 
 ## 12. 下一步优先事项
 
-### 🔴 P0: 用户查看 GitHub Actions 日志
+### 🟢 P2: 可选优化 (非阻塞)
 
-访问 https://github.com/knight-zmz/biostructure-db/actions 确认:
-1. workflow 是否触发 (查看最新 run)
-2. Deploy via SSH 步骤是否成功 (查看日志)
-3. Restart PM2 步骤是否执行 (查看日志)
-4. 如有错误，记录具体错误信息
+1. **升级 Node.js 版本** (20→22)
+   - GitHub Actions 使用 Node.js 20 (2026-04-30 EOL)
+   - 建议升级到 Node.js 22 LTS
+   - 优先级：低 (当前为警告，非阻塞)
 
-### 🔴 P0: 根据日志定位失败原因
+2. **配置 Nginx 反向代理**
+   - 可选，当前直接使用 Node.js 端口 3000
+   - 优先级：低
 
-候选原因:
-- SSH 连接失败 (私钥/公钥不匹配)
-- Secrets 值错误 (DEPLOY_HOST/DEPLOY_USER 错误)
-- workflow 未触发 (分支不匹配)
-- Deploy 步骤失败 (路径/权限问题)
-- PM2 重启命令失败 (进程名不匹配)
+3. **配置自动备份**
+   - 数据库自动备份
+   - 优先级：中
 
-### 🟡 P1: 修复后重新验证部署闭环
+4. **配置监控告警**
+   - 服务监控
+   - 资源告警
+   - 优先级：中
 pm2 describe myapp | grep restarts  # 应从 1 变为 2
 ```
 
