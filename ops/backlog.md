@@ -1,6 +1,7 @@
 # 📋 Backlog - 待办事项清单
 
 **生成时间**: 2026-03-29 22:56 CST  
+**更新时间**: 2026-03-29 23:45 CST  
 **优先级**: 🔴 紧急 | 🟡 重要 | 🟢 可选
 
 ---
@@ -8,47 +9,107 @@
 ## 🔴 P0 - 阻塞项 (必须完成才能启动)
 
 ### 1. 安装 PostgreSQL
-- [ ] 安装 PostgreSQL 13+
-- [ ] 启动服务
-- [ ] 创建数据库 `myapp`
-- [ ] 创建用户 `myapp_user` 并设置密码
-- [ ] 导入 schema (`src/db/schema.sql`)
-- [ ] 验证连接
+- [x] 安装 PostgreSQL 13+
+- [x] 启动服务
+- [x] 创建数据库 `myapp`
+- [x] 创建用户 `myapp_user` 并设置密码
+- [x] 导入 schema (`src/db/schema.sql`)
+- [x] 验证连接
 
-**验收标准**: `psql -U myapp_user -d myapp -c "SELECT 1"` 成功
+**验收标准**: `psql -U myapp_user -d myapp -c "SELECT 1"` 成功  
+**状态**: ✅ **已完成** (2026-03-29)
 
 ### 2. 安装 Redis
-- [ ] 安装 Redis 6+
-- [ ] 启动服务
-- [ ] 验证连接 (`redis-cli ping`)
+- [x] 安装 Redis 6+
+- [x] 启动服务
+- [x] 验证连接 (`redis-cli ping`)
 
-**验收标准**: `redis-cli ping` 返回 `PONG`
+**验收标准**: `redis-cli ping` 返回 `PONG`  
+**状态**: ✅ **已完成** (2026-03-29)
 
 ### 3. 安装 PM2
-- [ ] 全局安装 PM2 (`npm install -g pm2`)
-- [ ] 配置 PM2 开机启动
-- [ ] 验证 PM2 可用
+- [x] 全局安装 PM2 (`npm install -g pm2`)
+- [x] 配置 PM2 开机启动
+- [x] 验证 PM2 可用
 
-**验收标准**: `pm2 --version` 显示版本号
+**验收标准**: `pm2 --version` 显示版本号  
+**状态**: ✅ **已完成** (2026-03-29)
 
 ### 4. 创建环境变量文件
-- [ ] 创建 `.env.example` (模板)
-- [ ] 创建 `.env` (实际配置)
-- [ ] 更新代码使用环境变量 (移除硬编码)
+- [x] 创建 `.env.example` (模板)
+- [x] 创建 `.env` (实际配置)
+- [x] 更新代码使用环境变量 (移除硬编码)
+- [x] 移除 fallback 默认密码 `|| 'MyApp@2026'`
 
-**验收标准**: 代码不再硬编码数据库密码
+**验收标准**: 代码不再硬编码数据库密码  
+**状态**: ✅ **已完成** (2026-03-29)
+
+### 5. GitHub Actions 部署验证
+- [x] 推送测试文件触发 workflow
+- [x] 验证文件部署到 `/var/www/myapp`
+- [ ] 验证 PM2 自动重启 (⏳ 需检查 Secrets)
+- [ ] 验证健康检查自动通过
+
+**验收标准**: 推送后自动部署并重启  
+**状态**: ⏳ **部分完成** (文件部署✅, PM2 重启⏳)
 
 ---
 
 ## 🟡 P1 - 重要项 (启动后需尽快完成)
 
-### 5. 启动应用
-- [ ] 使用 PM2 启动应用
-- [ ] 验证健康检查端点 (`/api/health`)
-- [ ] 验证 API 文档端点 (`/api/docs`)
-- [ ] 验证静态文件服务
+### 6. 启动应用
+- [x] 使用 PM2 启动应用
+- [x] 验证健康检查端点 (`/api/health`)
+- [x] 验证 API 文档端点 (`/api/docs`)
+- [x] 验证静态文件服务
 
-**验收标准**: `curl http://localhost:3000/api/health` 返回 healthy
+**验收标准**: `curl http://localhost:3000/api/health` 返回 healthy  
+**状态**: ✅ **已完成** (2026-03-29)
+
+### 7. 配置 Nginx (可选但推荐)
+- [ ] 安装 Nginx
+- [ ] 配置反向代理 (80 → 3000)
+- [ ] 配置静态文件服务
+- [ ] 验证访问
+
+**验收标准**: `curl http://localhost/` 返回 index.html  
+**状态**: ⏳ **未开始**
+
+### 8. 配置 GitHub Actions 部署
+- [x] 验证 SSH 密钥在 GitHub 的部署
+- [ ] 验证 `DEPLOY_HOST` 等 secrets
+- [ ] 测试手动触发部署
+- [ ] 验证自动部署流程
+
+**验收标准**: push 到 main 分支后自动部署成功  
+**状态**: ⏳ **进行中** (Secrets 待验证)
+
+### 9. 规范化 pg_hba.conf 配置
+- [x] 创建 scripts/configure-pg_hba.sh
+- [x] 更新 ops/runbook.md
+- [ ] 在新服务器上测试脚本
+
+**验收标准**: 新服务器一键配置 PostgreSQL 认证  
+**状态**: ✅ **脚本完成** (待实测)
+
+### 10. 明确目录规范
+- [x] 创建 ops/DIRECTORY_POLICY.md
+- [x] 明确 `/var/www/myapp` 为生产路径
+- [x] 明确 `/home/admin/biostructure-db` 为开发目录
+- [x] 更新禁止事项和验证命令
+
+**验收标准**: 文档清晰，团队理解一致  
+**状态**: ✅ **已完成** (2026-03-29)
+
+### 11. 失败恢复与回滚
+- [x] 编写应用启动失败恢复步骤
+- [x] 编写数据库连接失败处理
+- [x] 编写 GitHub Actions 部署失败排查
+- [x] 编写配置错误恢复步骤
+- [x] 编写数据库回滚流程
+
+**验收标准**: ops/runbook.md 含完整恢复指南  
+**状态**: ✅ **已完成** (2026-03-29)
 
 ### 6. 配置 Nginx (可选但推荐)
 - [ ] 安装 Nginx
