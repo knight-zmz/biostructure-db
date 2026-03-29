@@ -1,8 +1,67 @@
 # 📊 Project State - 项目状态盘点
 
 **生成时间**: 2026-03-29 22:56 CST  
+**更新时间**: 2026-03-29 23:50 CST  
 **项目**: biostructure-db  
-**版本**: 1.0.0
+**版本**: 1.0.0  
+**当前阶段**: 基础闭环收口 (Round 4)
+
+---
+
+## 0. 当前状态总览
+
+### 0.1 已完成闭环
+
+| 闭环项 | 状态 | 验证时间 |
+|--------|------|----------|
+| PostgreSQL 安装与初始化 | ✅ 已验证 | 2026-03-29 22:59 |
+| Redis 安装与启动 | ✅ 已验证 | 2026-03-29 23:00 |
+| PM2 安装与配置 | ✅ 已验证 | 2026-03-29 23:01 |
+| 环境变量配置 (.env) | ✅ 已验证 | 2026-03-29 23:19 |
+| 代码移除硬编码密码 | ✅ 已验证 | 2026-03-29 23:37 |
+| 应用健康检查 | ✅ 已验证 | 持续通过 |
+| 目录规范明确 | ✅ 已验证 | 2026-03-29 23:40 |
+| 失败恢复文档 | ✅ 已验证 | 2026-03-29 23:45 |
+| pg_hba.conf 配置脚本 | ✅ 已验证 | 2026-03-29 23:38 |
+
+### 0.2 未完成闭环
+
+| 闭环项 | 状态 | 阻塞原因 |
+|--------|------|----------|
+| GitHub Actions 完整部署 | ⏳ 仍待验证 | SSH 公钥未授权到服务器 |
+| Secrets 配置验证 | ⏳ 仍待验证 | 需用户确认 GitHub Settings |
+| 自动部署后 PM2 重启 | ⏳ 仍待验证 | 依赖上述两项 |
+
+### 0.3 当前最大阻塞
+
+**🔴 SSH 公钥未授权**
+
+**证据**:
+```bash
+$ cat ~/.ssh/biostructure_db_deploy.pub
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFQ2m9wlN5m/DXkJ0uQcqOZ2Ui6RCvTXVfMI7+B9EuJT
+
+$ grep -F "$(cat ~/.ssh/biostructure_db_deploy.pub)" ~/.ssh/authorized_keys
+# (无结果 - 公钥不在 authorized_keys 中)
+```
+
+**影响**: GitHub Actions 无法通过 SSH 部署到服务器
+
+**解决方案**:
+```bash
+# 将部署公钥添加到 authorized_keys
+cat ~/.ssh/biostructure_db_deploy.pub >> ~/.ssh/authorized_keys
+```
+
+### 0.4 下一轮优先事项
+
+1. 🔴 添加 SSH 公钥到 authorized_keys
+2. 🔴 验证 GitHub Secrets 配置 (DEPLOY_SSH_KEY, DEPLOY_HOST, DEPLOY_USER)
+3. 🔴 重新触发 GitHub Actions 部署测试
+4. 🟡 验证 PM2 自动重启
+5. 🟡 更新所有文档同步到生产目录
+
+---
 
 ---
 
