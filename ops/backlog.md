@@ -76,13 +76,16 @@
 **状态**: ⏳ **未开始**
 
 ### 8. 配置 GitHub Actions 部署
-- [x] 验证 SSH 密钥在 GitHub 的部署
-- [ ] 验证 `DEPLOY_HOST` 等 secrets
+- [x] 创建 deploy.yml 工作流文件
+- [x] SSH 公钥已添加到服务器 authorized_keys
+- [ ] 配置 `DEPLOY_SSH_KEY` Secret (需用户介入)
+- [ ] 配置 `DEPLOY_HOST` Secret (需用户介入)
+- [ ] 配置 `DEPLOY_USER` Secret (需用户介入)
 - [ ] 测试手动触发部署
 - [ ] 验证自动部署流程
 
-**验收标准**: push 到 main 分支后自动部署成功  
-**状态**: ⏳ **进行中** (Secrets 待验证)
+**验收标准**: push 到 main 分支后自动部署并重启 PM2  
+**状态**: 🔴 **阻塞** (等待用户配置 Secrets)
 
 ### 9. 规范化 pg_hba.conf 配置
 - [x] 创建 scripts/configure-pg_hba.sh
