@@ -6,11 +6,15 @@
 const { Pool } = require('pg');
 
 // 数据库连接池 (从环境变量读取)
+if (!process.env.DB_PASSWORD) {
+  console.warn('⚠️ DB_PASSWORD not set, using fallback (INSECURE). Please create .env file.');
+}
+
 const pool = new Pool({
   user: process.env.DB_USER || 'myapp_user',
   host: process.env.DB_HOST || '127.0.0.1',
   database: process.env.DB_NAME || 'myapp',
-  password: process.env.DB_PASSWORD || 'MyApp@2026',
+  password: process.env.DB_PASSWORD,
   port: process.env.DB_PORT || 5432,
 });
 
