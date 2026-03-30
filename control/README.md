@@ -291,16 +291,32 @@ if __name__ == '__main__':
 - WorkingDirectory: `/home/admin/biostructure-db`
 - ExecStart: `/usr/bin/python3 /home/admin/biostructure-db/control/agent_loop.py`
 
-**Timer**: `systemd/openclaw-agent.timer`
-- OnCalendar: Every 15 minutes (8:00-20:00)
-- Persistent: true
+### Timer Dual Mode
 
-**Enable Sequence** (when ready):
+| Mode | Timer File | Schedule | Use Case |
+|------|-----------|----------|----------|
+| **Production** | `openclaw-agent.timer` | Every 15 min (8:00-20:00) | Daily autonomous operation |
+| **Test** | `openclaw-agent-test.timer` | Every 2 min (all day) | Session-level verification |
+
+**Switch Modes**:
+```bash
+# Check current status
+./scripts/timer-toggle.sh status
+
+# Switch to production
+./scripts/timer-toggle.sh prod
+
+# Switch to test (for quick verification)
+./scripts/timer-toggle.sh test
+```
+
+**Deploy Sequence**:
 ```bash
 sudo cp systemd/openclaw-agent.* /etc/systemd/system/
+sudo cp systemd/openclaw-agent-test.timer /etc/systemd/system/
 sudo systemctl daemon-reload
-sudo systemctl start openclaw-agent.service
 sudo systemctl enable openclaw-agent.timer
+sudo systemctl start openclaw-agent.timer
 ```
 
 ---

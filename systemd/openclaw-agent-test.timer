@@ -1,0 +1,13 @@
+[Unit]
+Description=OpenClaw Agent Loop Timer - TEST MODE (every 2 min)
+Documentation=file:///home/admin/biostructure-db/control/README.md
+
+[Timer]
+# TEST MODE: every 2 minutes - use for quick verification in current session
+OnCalendar=*-*-* *:0/2
+RandomizedDelaySec=5
+Persistent=false
+AccuracySec=3
+
+[Install]
+WantedBy=timers.target

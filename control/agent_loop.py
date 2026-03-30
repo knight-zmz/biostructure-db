@@ -211,7 +211,9 @@ def update_queue_after_task(queue: dict, task: dict, success: bool, result: dict
                 'verified': True
             },
             # Status layer: git state (updated by external commit workflow)
-            'git_state': 'uncommitted'
+            'git_state': 'uncommitted',
+            # Machine-readable lifecycle state (derived from verification + git_state)
+            'lifecycle_state': 'verified'
         }
         # Remove internal _pool field before storing
         completed_task.pop('_pool', None)
@@ -251,7 +253,8 @@ def update_queue_after_task(queue: dict, task: dict, success: bool, result: dict
                 'runtime_state_updated': True,
                 'verified': False
             },
-            'git_state': 'uncommitted'
+            'git_state': 'uncommitted',
+            'lifecycle_state': 'implemented'
         }
         failed_task.pop('_pool', None)
         queue['completed'].append(failed_task)
