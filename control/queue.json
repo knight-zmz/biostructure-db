@@ -2,45 +2,14 @@
   "_meta": {
     "description": "OpenClaw Control Plane - Task Queue v1.2",
     "version": "1.2.0",
-    "updated": "2026-03-30T23:54:31.681902",
+    "updated": "2026-03-31T00:06:04.357517",
     "task_supply_system": "v1.2",
     "timer_verify_mode": true,
     "timer_verify_note": "2 low-risk tasks injected for timer auto-trigger verification"
   },
   "current_phase": "P2_DATA_CONTENT",
   "task_pools": {
-    "runnable_now": [
-      {
-        "id": "timer-verify-001",
-        "name": "verify_api_health",
-        "title": "验证 API 健康状态",
-        "description": "检查 /api/health 端点返回 200，验证服务运行正常",
-        "source": "log_triage_tasks",
-        "phase": "P2",
-        "priority": 1,
-        "status": "pending",
-        "handler": "verify_api_health",
-        "boundary": "read_only_verification",
-        "done_when": "health endpoint returns 200, response time acceptable",
-        "auto_execute": true,
-        "risk_level": "low"
-      },
-      {
-        "id": "timer-verify-002",
-        "name": "verify_pm2_process",
-        "title": "验证 PM2 进程状态",
-        "description": "检查 PM2 进程 myapp 是否在线且无频繁重启",
-        "source": "log_triage_tasks",
-        "phase": "P2",
-        "priority": 2,
-        "status": "pending",
-        "handler": "verify_pm2_process",
-        "boundary": "read_only_verification",
-        "done_when": "PM2 process online, no restart loop",
-        "auto_execute": true,
-        "risk_level": "low"
-      }
-    ],
+    "runnable_now": [],
     "analyze_first": [],
     "waiting_user": [],
     "paused_by_policy": [
@@ -675,6 +644,92 @@
         "message": "API performance baseline analysis completed",
         "timestamp": "2026-03-30T23:20:41.767429"
       }
+    },
+    {
+      "id": "timer-verify-003",
+      "name": "verify_api_health",
+      "title": "验证 API 健康状态",
+      "description": "检查 /api/health 端点返回 200",
+      "source": "log_triage_tasks",
+      "phase": "P2",
+      "priority": 1,
+      "status": "failed",
+      "handler": "verify_api_health",
+      "boundary": "read_only_verification",
+      "done_when": "health endpoint returns 200",
+      "auto_execute": true,
+      "risk_level": "low",
+      "completed_at": "2026-03-31T00:04:12.495766",
+      "result": {
+        "error": "",
+        "output": "{\"handler\": \"verify_api_health\", \"status\": \"failed\", \"error\": \"<urlopen error [Errno 111] Connection refused>\", \"timestamp\": \"2026-03-31T00:04:12.455609\"}\n"
+      },
+      "verification": {
+        "handler_success": false,
+        "log_recorded": true,
+        "runtime_state_updated": true,
+        "verified": false
+      },
+      "git_state": "uncommitted"
+    },
+    {
+      "id": "timer-verify-005",
+      "name": "verify_control_plane_integrity",
+      "title": "验证控制平面完整性",
+      "description": "检查 control 平面文件存在且 JSON 有效（零依赖只读验证）",
+      "source": "drift_sync_tasks",
+      "phase": "P2",
+      "priority": 1,
+      "status": "completed",
+      "handler": "verify_control_plane_integrity",
+      "boundary": "read_only_verification",
+      "done_when": "All control plane files exist and valid JSON",
+      "auto_execute": true,
+      "risk_level": "low",
+      "completed_at": "2026-03-31T00:06:04.357453",
+      "result": {
+        "handler": "verify_control_plane_integrity",
+        "status": "success",
+        "checks": [
+          {
+            "file": "queue.json",
+            "exists": true,
+            "size": 25503,
+            "valid_json": true,
+            "ok": true
+          },
+          {
+            "file": "runtime_state.json",
+            "exists": true,
+            "size": 1743,
+            "valid_json": true,
+            "ok": true
+          },
+          {
+            "file": "phase_policy.json",
+            "exists": true,
+            "size": 2582,
+            "valid_json": true,
+            "ok": true
+          },
+          {
+            "file": "paused.json",
+            "exists": true,
+            "size": 1713,
+            "valid_json": true,
+            "ok": true
+          }
+        ],
+        "all_ok": true,
+        "timestamp": "2026-03-31T00:06:04.345978"
+      },
+      "verification": {
+        "handler_success": true,
+        "log_recorded": true,
+        "runtime_state_updated": true,
+        "verified": true
+      },
+      "git_state": "uncommitted"
     }
   ],
   "task_sources": {

@@ -239,23 +239,30 @@ def update_queue_after_task(queue: dict, task: dict, success: bool, result: dict
                 if task['id'] in t.get('depends_on', []):
                     t['status'] = 'pending'
     else:
-        # Mark task as failed
+        # Mark task as failed, move to completed
+        failed_task = {
+            **task,
+            'status': 'failed',
+            'completed_at': datetime.now().isoformat(),
+            'result': result,
+            'verification': {
+                'handler_success': False,
+                'log_recorded': True,
+                'runtime_state_updated': True,
+                'verified': False
+            },
+            'git_state': 'uncommitted'
+        }
+        failed_task.pop('_pool', None)
+        queue['completed'].append(failed_task)
+
         if pool_name and 'task_pools' in queue:
             task_pools = queue.get('task_pools', {})
             pool = task_pools.get(pool_name, [])
-            for t in pool:
-                if t['id'] == task['id']:
-                    t['status'] = 'failed'
-                    t['error'] = result.get('error', 'unknown')
-                    break
+            task_pools[pool_name] = [t for t in pool if t['id'] != task['id']]
             queue['task_pools'] = task_pools
         else:
-            # Legacy flat queue structure
-            for t in queue['queue']:
-                if t['id'] == task['id']:
-                    t['status'] = 'failed'
-                    t['error'] = result.get('error', 'unknown')
-                    break
+            queue['queue'] = [t for t in queue['queue'] if t['id'] != task['id']]
     
     queue['_meta']['updated'] = datetime.now().isoformat()
     return queue
