@@ -1,0 +1,104 @@
+{
+  "audit_date": "2026-03-30T22:26:02.722463",
+  "audits": {
+    "chains_polypeptides": {
+      "audit_type": "chains_vs_polypeptides",
+      "schema_has_chains": false,
+      "schema_has_polypeptides": true,
+      "code_references": [
+        {
+          "line": 118,
+          "content": "pool.query('SELECT * FROM chains WHERE pdb_id = $1', [pdb1.toUpperCase()]),"
+        },
+        {
+          "line": 119,
+          "content": "pool.query('SELECT * FROM chains WHERE pdb_id = $1', [pdb2.toUpperCase()])"
+        },
+        {
+          "line": 266,
+          "content": "const chains = await pool.query('SELECT * FROM chains WHERE pdb_id = $1', [pdbId]);"
+        }
+      ],
+      "recommendation": "Replace 'chains' with 'polypeptides' in app.js queries",
+      "risk_level": "low",
+      "chains_query_count": 3,
+      "fix_type": "search_and_replace",
+      "files_to_modify": [
+        "src/app.js"
+      ]
+    },
+    "structure_stats": {
+      "audit_type": "structure_stats",
+      "schema_has_structure_stats": false,
+      "code_references": [
+        {
+          "line": 111,
+          "content": "pool.query('SELECT * FROM structure_stats WHERE pdb_id = $1', [pdb1.toUpperCase()]),"
+        },
+        {
+          "line": 112,
+          "content": "pool.query('SELECT * FROM structure_stats WHERE pdb_id = $1', [pdb2.toUpperCase()])"
+        },
+        {
+          "line": 229,
+          "content": "`SELECT COUNT(*) FROM structure_stats WHERE ${where.join(' AND ')}`,"
+        },
+        {
+          "line": 237,
+          "content": "`SELECT * FROM structure_stats WHERE ${where.join(' AND ')} ORDER BY ${sortCol} ${sortOrder} ${nulls"
+        },
+        {
+          "line": 348,
+          "content": "let query = 'SELECT * FROM structure_stats WHERE 1=1';"
+        }
+      ],
+      "recommendation": "Either: (A) Add structure_stats table to schema, or (B) Remove legacy code from app.js",
+      "risk_level": "medium",
+      "structure_stats_query_count": 5,
+      "options": {
+        "option_a": {
+          "action": "Add structure_stats table to schema",
+          "impact": "Requires schema migration",
+          "complexity": "medium"
+        },
+        "option_b": {
+          "action": "Remove structure_stats queries from app.js",
+          "impact": "May break /api/compare endpoint",
+          "complexity": "low"
+        }
+      },
+      "preferred_option": "option_b - Check if structure_stats data can be derived from structures table"
+    },
+    "authors_design": {
+      "audit_type": "authors_design",
+      "schema_has_authors_table": false,
+      "code_references": [
+        {
+          "line": 265,
+          "content": "const authors = await pool.query('SELECT name FROM authors WHERE pdb_id = $1 ORDER BY order_num', [p"
+        }
+      ],
+      "recommendation": "Code expects separate authors table, but schema uses structures.authors TEXT[]",
+      "risk_level": "medium",
+      "authors_query_count": 1,
+      "options": {
+        "option_a": {
+          "action": "Create separate authors table",
+          "impact": "Requires schema migration and data migration",
+          "complexity": "high"
+        },
+        "option_b": {
+          "action": "Update app.js to use structures.authors field",
+          "impact": "Code change only",
+          "complexity": "low"
+        }
+      },
+      "preferred_option": "option_b - Keep simple design with TEXT[] unless complex author queries needed"
+    }
+  },
+  "summary": {
+    "total_issues": 3,
+    "low_risk": 1,
+    "medium_risk": 2
+  }
+}

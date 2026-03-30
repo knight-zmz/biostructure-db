@@ -1,0 +1,86 @@
+{
+  "_meta": {
+    "description": "OpenClaw Control Plane - Phase Execution Policy",
+    "version": "1.0.0",
+    "updated": "2026-03-30T17:40:00+08:00"
+  },
+  "phase_definitions": {
+    "P0_COLD_START": {
+      "description": "Initial environment setup and deployment",
+      "status": "completed",
+      "completed_at": "2026-03-30T00:38:00+08:00",
+      "auto_advance": false,
+      "must_stop_on_complete": true,
+      "requires_user_confirm_next": true
+    },
+    "P1_ENGINEERING": {
+      "description": "Engineering improvements (backup, monitoring)",
+      "status": "deployed_pending_verification",
+      "auto_advance": true,
+      "must_stop_on_complete": false,
+      "requires_user_confirm_next": false,
+      "verification_period": "7d"
+    },
+    "P2_DATA_CONTENT": {
+      "description": "Data import and content verification",
+      "status": "in_progress",
+      "auto_advance": true,
+      "must_stop_on_complete": false,
+      "requires_user_confirm_next": false,
+      "max_concurrent_imports": 5
+    },
+    "P3_MAINTENANCE": {
+      "description": "Maintenance and optimization",
+      "status": "not_started",
+      "auto_advance": false,
+      "must_stop_on_complete": true,
+      "requires_user_confirm_next": true
+    }
+  },
+  "execution_rules": {
+    "default_behavior": "auto_execute_within_phase",
+    "stop_boundaries": [
+      "phase_transition",
+      "paused_task_conflict",
+      "error_threshold_exceeded",
+      "user_interrupt"
+    ],
+    "error_handling": {
+      "max_retries": 3,
+      "retry_delay_seconds": 60,
+      "stop_on_consecutive_errors": 3
+    },
+    "logging": {
+      "log_every_action": true,
+      "log_to": "control/logs/agent-loop.log",
+      "include_timestamps": true,
+      "include_state_changes": true
+    }
+  },
+  "handler_registry": {
+    "p2_select_samples": {
+      "description": "Select representative PDB structures for import",
+      "phase": "P2",
+      "timeout_seconds": 300,
+      "retry_on_network_error": true
+    },
+    "p2_import_samples": {
+      "description": "Import selected PDB structures via API",
+      "phase": "P2",
+      "timeout_seconds": 600,
+      "retry_on_network_error": true
+    },
+    "p2_verify_api": {
+      "description": "Verify API returns real data",
+      "phase": "P2",
+      "timeout_seconds": 60,
+      "endpoints": ["/api/stats", "/api/structures", "/api/health"]
+    },
+    "p2_update_docs": {
+      "description": "Update documentation with real examples",
+      "phase": "P2",
+      "timeout_seconds": 300,
+      "files": ["README.md", "ops/project_state.md"]
+    }
+  }
+}

@@ -108,15 +108,23 @@ app.get('/api/compare', async (req, res) => {
       return res.status(400).json({ success: false, error: '需要两个 PDB ID: ?pdb1=XXX&pdb2=YYY' });
     }
     const [s1, s2] = await Promise.all([
-      pool.query('SELECT * FROM structure_stats WHERE pdb_id = $1', [pdb1.toUpperCase()]),
-      pool.query('SELECT * FROM structure_stats WHERE pdb_id = $1', [pdb2.toUpperCase()])
+      pool.query(`
+      SELECT s.*, 
+             (SELECT COUNT(DISTINCT chain_id) FROM polypeptides WHERE pdb_id = $1) as chain_count,
+             (SELECT COUNT(*) FROM atoms WHERE pdb_id = $1) as atom_count
+      FROM structures s WHERE s.pdb_id = $1`, [pdb1.toUpperCase()]),
+      pool.query(`
+      SELECT s.*, 
+             (SELECT COUNT(DISTINCT chain_id) FROM polypeptides WHERE pdb_id = $1) as chain_count,
+             (SELECT COUNT(*) FROM atoms WHERE pdb_id = $1) as atom_count
+      FROM structures s WHERE s.pdb_id = $1`, [pdb2.toUpperCase()])
     ]);
     if (s1.rows.length === 0 || s2.rows.length === 0) {
       return res.status(404).json({ success: false, error: '一个或多个 PDB ID 未找到' });
     }
     const [chains1, chains2] = await Promise.all([
-      pool.query('SELECT * FROM chains WHERE pdb_id = $1', [pdb1.toUpperCase()]),
-      pool.query('SELECT * FROM chains WHERE pdb_id = $1', [pdb2.toUpperCase()])
+      pool.query('SELECT * FROM polypeptides WHERE pdb_id = $1', [pdb1.toUpperCase()]),
+      pool.query('SELECT * FROM polypeptides WHERE pdb_id = $1', [pdb2.toUpperCase()])
     ]);
     res.json({
       success: true,
@@ -226,15 +234,21 @@ app.get('/api/structures', cacheMiddleware(600), async (req, res) => {
     const nullsClause = sortCol === 'resolution' ? 'NULLS LAST' : '';
 
     const countResult = await pool.query(
-      `SELECT COUNT(*) FROM structure_stats WHERE ${where.join(' AND ')}`,
+      `SELECT COUNT(*) FROM structures WHERE ${where.join(' AND ')}`,
       params
     );
 
     params.push(parseInt(limit));
     params.push(offset);
 
-    const result = await pool.query(
-      `SELECT * FROM structure_stats WHERE ${where.join(' AND ')} ORDER BY ${sortCol} ${sortOrder} ${nullsClause} LIMIT $${paramIdx++} OFFSET $${paramIdx}`,
+    const result = await pool.query(`
+      SELECT s.*, 
+             (SELECT COUNT(DISTINCT chain_id) FROM polypeptides WHERE pdb_id = s.pdb_id) as chain_count,
+             (SELECT COUNT(*) FROM atoms WHERE pdb_id = s.pdb_id) as atom_count
+      FROM structures s 
+      WHERE ${where.join(' AND ')} 
+      ORDER BY ${sortCol} ${sortOrder} ${nullsClause} 
+      LIMIT $${paramIdx++} OFFSET $${paramIdx}`,
       params
     );
 
@@ -262,8 +276,13 @@ app.get('/api/structures/:pdbId', cacheMiddleware(600), async (req, res) => {
     if (structure.rows.length === 0) {
       return res.status(404).json({ success: false, error: 'PDB ID not found' });
     }
-    const authors = await pool.query('SELECT name FROM authors WHERE pdb_id = $1 ORDER BY order_num', [pdbId]);
-    const chains = await pool.query('SELECT * FROM chains WHERE pdb_id = $1', [pdbId]);
+    // Extract authors from structures.authors TEXT[] field
+    const authorsArray = structure.rows[0].authors || [];
+    const authorsFormatted = authorsArray.map((name, index) => ({
+      name: name,
+      order_num: index + 1
+    }));
+    const chains = await pool.query('SELECT * FROM polypeptides WHERE pdb_id = $1', [pdbId]);
     const citations = await pool.query('SELECT * FROM citations WHERE pdb_id = $1', [pdbId]);
     const ligands = await pool.query('SELECT * FROM ligands WHERE pdb_id = $1', [pdbId]);
     const sequences = await pool.query('SELECT * FROM sequence_index WHERE pdb_id = $1', [pdbId]);
@@ -277,7 +296,7 @@ app.get('/api/structures/:pdbId', cacheMiddleware(600), async (req, res) => {
       success: true,
       data: {
         ...structure.rows[0],
-        authors: authors.rows,
+        authors: authorsFormatted,
         chains: chains.rows,
         citations: citations.rows,
         ligands: ligands.rows,
@@ -301,7 +320,7 @@ app.get('/api/structures/:pdbId/atoms', async (req, res) => {
     const params = [pdbId];
     
     if (chain) {
-      query += ' AND chain_letter = $2';
+      query += ' AND chain_id = $2';
       params.push(chain);
     }
     
@@ -317,7 +336,7 @@ app.get('/api/structures/:pdbId/residues', async (req, res) => {
   try {
     const { pdbId } = req.params;
     const result = await pool.query(
-      'SELECT * FROM residues WHERE pdb_id = $1 ORDER BY chain_letter, residue_num',
+      'SELECT * FROM residues WHERE pdb_id = $1 ORDER BY chain_id, residue_num',
       [pdbId]
     );
     res.json({ success: true, data: result.rows });
@@ -345,7 +364,11 @@ app.get('/api/search', async (req, res) => {
   try {
     const { q, method, minResolution } = req.query;
     
-    let query = 'SELECT * FROM structure_stats WHERE 1=1';
+    let query = `
+  SELECT s.*, 
+         (SELECT COUNT(DISTINCT chain_id) FROM polypeptides WHERE pdb_id = s.pdb_id) as chain_count,
+         (SELECT COUNT(*) FROM atoms WHERE pdb_id = s.pdb_id) as atom_count
+  FROM structures s WHERE 1=1`;
     const params = [];
     let paramCount = 0;
     
@@ -438,19 +461,14 @@ app.post('/api/import/:pdbId', async (req, res) => {
       [pdbId, parsed.header.title || pdbId, parsed.header.resolution, parsed.header.method, 'Imported from RCSB PDB']
     );
     
-    // 插入作者
-    for (let i = 0; i < parsed.header.authors.length; i++) {
-      await pool.query(
-        `INSERT INTO authors (pdb_id, name, order_num) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`,
-        [pdbId, parsed.header.authors[i], i + 1]
-      );
-    }
+    // 作者信息存储在 structures.authors TEXT[] 字段
+    // TODO: 如需存储作者，可添加到 description 字段或扩展 schema
     
-    // 插入链
+    // 插入多肽链信息
     for (const chain of parsed.chains) {
       await pool.query(
-        `INSERT INTO chains (pdb_id, chain_letter, description) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`,
-        [pdbId, chain, `Chain ${chain}`]
+        `INSERT INTO polypeptides (pdb_id, chain_id, pdbx_seq_one_letter_code) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`,
+        [pdbId, chain, null]
       );
     }
     
@@ -460,7 +478,7 @@ app.post('/api/import/:pdbId', async (req, res) => {
     
     for (const atom of atomsToInsert) {
       await pool.query(
-        `INSERT INTO atoms (pdb_id, atom_name, atom_type, chain_letter, residue_num, residue_name, x_coord, y_coord, z_coord, element)
+        `INSERT INTO atoms (pdb_id, atom_name, atom_type, chain_id, residue_num, residue_name, x_coord, y_coord, z_coord, element)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
         [pdbId, atom.name, atom.name.charAt(0), atom.chain, atom.resSeq, atom.resName, atom.x, atom.y, atom.z, atom.element]
       );
@@ -473,7 +491,7 @@ app.post('/api/import/:pdbId', async (req, res) => {
       if (!residues.includes(key)) {
         residues.push(key);
         await pool.query(
-          `INSERT INTO residues (pdb_id, chain_letter, residue_num, residue_name, residue_type) 
+          `INSERT INTO residues (pdb_id, chain_id, residue_num, residue_name, residue_type) 
            VALUES ($1, $2, $3, $4, $5) ON CONFLICT DO NOTHING`,
           [pdbId, atom.chain, atom.resSeq, atom.resName, 'amino_acid']
         );
@@ -523,7 +541,7 @@ app.post('/api/import-samples', async (req, res) => {
         const atomsToInsert = parsed.atoms.slice(0, 100);
         for (const atom of atomsToInsert) {
           await pool.query(
-            `INSERT INTO atoms (pdb_id, atom_name, chain_letter, residue_num, residue_name, x_coord, y_coord, z_coord, element)
+            `INSERT INTO atoms (pdb_id, atom_name, chain_id, residue_num, residue_name, x_coord, y_coord, z_coord, element)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
             [pdbId, atom.name, atom.chain, atom.resSeq, atom.resName, atom.x, atom.y, atom.z, atom.element]
           );

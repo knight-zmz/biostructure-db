@@ -1,0 +1,19 @@
+[Unit]
+Description=OpenClaw Agent Loop Timer - BioStructure DB Control Plane
+Documentation=file:///home/admin/biostructure-db/control/README.md
+
+[Timer]
+# Run every 15 minutes during daytime (8:00-20:00)
+OnCalendar=*-*-* 8..20:0/15
+
+# Randomize start time by up to 2 minutes to avoid thundering herd
+RandomizedDelaySec=120
+
+# Run immediately if last scheduled time was missed
+Persistent=true
+
+# Accuracy: allow up to 1 minute delay for power saving
+AccuracySec=60
+
+[Install]
+WantedBy=timers.target

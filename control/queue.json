@@ -1,0 +1,134 @@
+{
+  "_meta": {
+    "description": "OpenClaw Control Plane - Task Queue",
+    "version": "1.1.0",
+    "updated": "2026-03-30T22:55:00+08:00"
+  },
+  "current_phase": "P2_DATA_CONTENT",
+  "queue": [],
+  "completed": [
+    {
+      "id": "p2-sample-001",
+      "name": "select_representative_pdbs",
+      "phase": "P2",
+      "status": "completed",
+      "completed_at": "2026-03-30T21:06:42Z"
+    },
+    {
+      "id": "p2-sample-002",
+      "name": "import_selected_samples",
+      "phase": "P2",
+      "status": "completed",
+      "completed_at": "2026-03-30T21:07:09Z"
+    },
+    {
+      "id": "p2-sample-003",
+      "name": "verify_api_returns_real_data",
+      "phase": "P2",
+      "status": "completed",
+      "completed_at": "2026-03-30T21:07:28Z"
+    },
+    {
+      "id": "p2-sample-004",
+      "name": "update_project_documentation",
+      "phase": "P2",
+      "status": "completed",
+      "completed_at": "2026-03-30T21:07:43Z"
+    },
+    {
+      "id": "audit-fix-001",
+      "name": "fix_package_json_entry_point",
+      "phase": "P2",
+      "status": "completed",
+      "completed_at": "2026-03-30T22:25:37Z"
+    },
+    {
+      "id": "audit-fix-004",
+      "name": "sync_timer_enabled_state",
+      "phase": "P2",
+      "status": "completed",
+      "completed_at": "2026-03-30T22:26:00Z"
+    },
+    {
+      "id": "audit-deep-001",
+      "name": "audit_schema_code_consistency",
+      "phase": "P2",
+      "status": "completed",
+      "completed_at": "2026-03-30T22:26:02Z"
+    },
+    {
+      "id": "fix-authors-001",
+      "name": "fix_authors_text_array_usage",
+      "phase": "P2",
+      "status": "completed",
+      "completed_at": "2026-03-30T22:43:35Z",
+      "result": {
+        "changes": ["Replaced authors query with TEXT[] extraction", "Updated response to use authorsFormatted", "Updated authors comment", "Fixed chains → polypeptides table reference"]
+      }
+    },
+    {
+      "id": "fix-structure-stats-001",
+      "name": "fix_structure_stats_queries",
+      "phase": "P2",
+      "status": "completed",
+      "completed_at": "2026-03-30T22:43:38Z",
+      "result": {
+        "changes": ["Fixed /api/compare query", "Fixed /api/structures COUNT query", "Fixed /api/structures SELECT query", "Fixed /api/search query", "Fixed chains → polypeptides references"],
+        "endpoints_fixed": ["/api/compare", "/api/structures", "/api/search"]
+      }
+    }
+  ],
+  "paused_tasks": [
+    {
+      "id": "https-certificate",
+      "name": "HTTPS/SSL 证书配置",
+      "reason": "ICP 备案限制",
+      "resume_condition": "ICP filing completed"
+    },
+    {
+      "id": "domain-access",
+      "name": "jlupdb.me 域名公网访问",
+      "reason": "ICP 备案限制",
+      "resume_condition": "ICP filing completed"
+    },
+    {
+      "id": "large-scale-import",
+      "name": "大规模 PDB 数据导入",
+      "reason": "Awaiting user decision after small-scale verification",
+      "resume_condition": "User confirms to proceed with 25+ structures"
+    }
+  ],
+  "execution_policy": {
+    "default_behavior": "auto_execute_within_phase",
+    "auto_execute_criteria": [
+      "documentation_consistency_fix",
+      "config_consistency_fix",
+      "entry_point_alignment",
+      "control_plane_state_sync",
+      "read_only_audit",
+      "low_risk_single_file_fix",
+      "code_only_schema_compatible_fix"
+    ],
+    "stop_boundaries": [
+      "phase_transition_P2_to_P3",
+      "paused_task_conflict",
+      "error_threshold_exceeded_3",
+      "user_interrupt",
+      "scale_boundary_sample_to_bulk",
+      "protocol_boundary_http_to_https",
+      "destructive_db_change",
+      "schema_structural_change_requires_new_table"
+    ],
+    "error_handling": {
+      "max_retries": 3,
+      "retry_delay_seconds": 60,
+      "stop_on_consecutive_errors": 3
+    }
+  },
+  "config": {
+    "max_queue_size": 10,
+    "auto_advance": true,
+    "stop_on_error": true,
+    "timer_enabled": true
+  }
+}

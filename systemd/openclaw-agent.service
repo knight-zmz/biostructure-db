@@ -1,0 +1,29 @@
+[Unit]
+Description=OpenClaw Agent Loop - BioStructure DB Control Plane
+Documentation=file:///home/admin/biostructure-db/control/README.md
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /home/admin/biostructure-db/control/agent_loop.py
+WorkingDirectory=/home/admin/biostructure-db
+User=admin
+Group=admin
+
+# Environment
+Environment="PYTHONUNBUFFERED=1"
+Environment="PATH=/usr/local/bin:/usr/bin:/bin"
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=openclaw-agent
+
+# Security (optional hardening)
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/home/admin/biostructure-db/control/logs
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

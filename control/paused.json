@@ -1,0 +1,47 @@
+{
+  "_meta": {
+    "description": "OpenClaw Control Plane - Paused Tasks",
+    "version": "1.0.0",
+    "updated": "2026-03-30T17:40:00+08:00"
+  },
+  "paused_tasks": [
+    {
+      "id": "https-certificate",
+      "name": "HTTPS/SSL Certificate Setup",
+      "reason": "ICP filing restriction - cannot complete public HTTPS during filing period",
+      "paused_at": "2026-03-30T12:40:00+08:00",
+      "paused_by": "user_decision",
+      "resume_condition": "ICP filing completed",
+      "resume_action": "Apply Let's Encrypt certificate and configure Nginx 443",
+      "related_files": [
+        "ops/runbook.md#11-备案完成后 HTTPS 接入指南"
+      ],
+      "priority_on_resume": "high"
+    },
+    {
+      "id": "domain-access",
+      "name": "jlupdb.me Domain Public Access",
+      "reason": "ICP filing restriction - domain access suspended during filing",
+      "paused_at": "2026-03-30T12:40:00+08:00",
+      "paused_by": "user_decision",
+      "resume_condition": "ICP filing completed",
+      "resume_action": "Enable domain access and HTTP→HTTPS redirect",
+      "current_access": "http://101.200.53.98 (IP direct)",
+      "priority_on_resume": "high"
+    },
+    {
+      "id": "large-scale-import",
+      "name": "Large-scale PDB Data Import",
+      "reason": "Awaiting user decision after P2 small-scale verification",
+      "paused_at": "2026-03-30T13:35:00+08:00",
+      "paused_by": "agent_wait_decision",
+      "resume_condition": "User confirms to proceed with large-scale import",
+      "resume_action": "Import 25+ structures from batch script",
+      "priority_on_resume": "medium"
+    }
+  ],
+  "config": {
+    "review_paused_every": "7d",
+    "notify_on_resume_condition_met": true
+  }
+}
