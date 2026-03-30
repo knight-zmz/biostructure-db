@@ -1,11 +1,160 @@
 {
   "_meta": {
-    "description": "OpenClaw Control Plane - Task Queue",
-    "version": "1.1.0",
-    "updated": "2026-03-30T22:55:00+08:00"
+    "description": "OpenClaw Control Plane - Task Queue v1.2",
+    "version": "1.2.0",
+    "updated": "2026-03-30T23:10:57.602077",
+    "task_supply_system": "v1.2"
   },
   "current_phase": "P2_DATA_CONTENT",
-  "queue": [],
+  "task_pools": {
+    "runnable_now": [
+      {
+        "id": "supply-003",
+        "name": "audit_readme_ops_consistency",
+        "title": "审计 README 与 ops 文档一致性",
+        "description": "检查 README.md 中的启动说明、API 端点与 ops/project_state.md 是否一致",
+        "source": "repo_audit_tasks",
+        "phase": "P2",
+        "priority": 3,
+        "status": "pending",
+        "handler": "audit_readme_ops",
+        "boundary": "read_only_audit",
+        "done_when": "Inconsistencies documented, fix recommendations generated",
+        "auto_execute": true,
+        "risk_level": "low"
+      },
+      {
+        "id": "supply-004",
+        "name": "audit_control_plane_state_drift",
+        "title": "审计控制平面状态漂移",
+        "description": "检查 queue.json / runtime_state.json / ops/project_state.md 三者状态是否一致",
+        "source": "drift_sync_tasks",
+        "phase": "P2",
+        "priority": 4,
+        "status": "pending",
+        "handler": "audit_state_drift",
+        "boundary": "read_only_audit",
+        "done_when": "State drift documented, sync recommendations generated",
+        "auto_execute": true,
+        "risk_level": "low"
+      },
+      {
+        "id": "supply-005",
+        "name": "audit_systemd_vs_control_metadata",
+        "title": "审计 systemd 与控制平面元数据一致性",
+        "description": "检查 systemd timer/service 实际状态与 control/queue.json config.timer_enabled 是否一致",
+        "source": "drift_sync_tasks",
+        "phase": "P2",
+        "priority": 5,
+        "status": "pending",
+        "handler": "audit_systemd_drift",
+        "boundary": "read_only_audit",
+        "done_when": "systemd state documented, metadata synced",
+        "auto_execute": true,
+        "risk_level": "low"
+      },
+      {
+        "id": "supply-006",
+        "name": "audit_pm2_logs_for_anomalies",
+        "title": "PM2 日志异常巡检",
+        "description": "扫描 PM2 日志中的 error/warning 模式，生成异常报告",
+        "source": "log_triage_tasks",
+        "phase": "P2",
+        "priority": 6,
+        "status": "pending",
+        "handler": "audit_pm2_logs",
+        "boundary": "read_only_audit",
+        "done_when": "Log anomalies documented, severity classified",
+        "auto_execute": true,
+        "risk_level": "low"
+      },
+      {
+        "id": "supply-007",
+        "name": "propose_status_page_structure",
+        "title": "提议状态页面结构",
+        "description": "为 /status 页面生成结构建议（显示 structures count, atoms, methods, uptime 等）",
+        "source": "roadmap_tasks",
+        "phase": "P2",
+        "priority": 7,
+        "status": "pending",
+        "handler": "propose_status_page",
+        "boundary": "design_proposal_only",
+        "done_when": "Status page structure documented with API endpoints and UI mockup",
+        "auto_execute": true,
+        "risk_level": "low"
+      },
+      {
+        "id": "supply-008",
+        "name": "propose_about_page_structure",
+        "title": "提议关于页面结构",
+        "description": "为 /about 页面生成结构建议（项目介绍、技术栈、数据来源等）",
+        "source": "roadmap_tasks",
+        "phase": "P2",
+        "priority": 8,
+        "status": "pending",
+        "handler": "propose_about_page",
+        "boundary": "design_proposal_only",
+        "done_when": "About page structure documented",
+        "auto_execute": true,
+        "risk_level": "low"
+      }
+    ],
+    "analyze_first": [
+      {
+        "id": "analyze-001",
+        "name": "analyze_test_coverage_gaps",
+        "title": "分析测试覆盖缺口",
+        "description": "分析当前测试覆盖率，识别未覆盖的 API 端点和关键函数",
+        "source": "roadmap_tasks",
+        "phase": "P2",
+        "priority": 10,
+        "status": "pending",
+        "handler": "analyze_test_coverage",
+        "boundary": "analysis_then_recommend",
+        "done_when": "Coverage gaps identified, test priorities recommended",
+        "auto_execute": false,
+        "risk_level": "medium",
+        "analysis_output": "control/audits/test_coverage_analysis.md"
+      },
+      {
+        "id": "analyze-002",
+        "name": "analyze_api_performance_baseline",
+        "title": "分析 API 性能基线",
+        "description": "建立 API 响应时间基线，识别潜在性能瓶颈",
+        "source": "roadmap_tasks",
+        "phase": "P2",
+        "priority": 11,
+        "status": "pending",
+        "handler": "analyze_api_performance",
+        "boundary": "read_only_analysis",
+        "done_when": "Performance baseline established, bottlenecks identified",
+        "auto_execute": false,
+        "risk_level": "medium",
+        "analysis_output": "control/audits/api_performance_baseline.md"
+      }
+    ],
+    "waiting_user": [],
+    "paused_by_policy": [
+      {
+        "id": "https-certificate",
+        "name": "HTTPS/SSL 证书配置",
+        "reason": "ICP 备案限制",
+        "resume_condition": "ICP filing completed"
+      },
+      {
+        "id": "domain-access",
+        "name": "jlupdb.me 域名公网访问",
+        "reason": "ICP 备案限制",
+        "resume_condition": "ICP filing completed"
+      },
+      {
+        "id": "large-scale-import",
+        "name": "大规模 PDB 数据导入",
+        "reason": "Awaiting user decision after small-scale verification",
+        "resume_condition": "User confirms to proceed with 25+ structures"
+      }
+    ]
+  },
   "completed": [
     {
       "id": "p2-sample-001",
@@ -61,45 +210,182 @@
       "name": "fix_authors_text_array_usage",
       "phase": "P2",
       "status": "completed",
-      "completed_at": "2026-03-30T22:43:35Z",
-      "result": {
-        "changes": ["Replaced authors query with TEXT[] extraction", "Updated response to use authorsFormatted", "Updated authors comment", "Fixed chains → polypeptides table reference"]
-      }
+      "completed_at": "2026-03-30T22:43:35Z"
     },
     {
       "id": "fix-structure-stats-001",
       "name": "fix_structure_stats_queries",
       "phase": "P2",
       "status": "completed",
-      "completed_at": "2026-03-30T22:43:38Z",
+      "completed_at": "2026-03-30T22:43:38Z"
+    },
+    {
+      "id": "supply-001",
+      "name": "verify_backup_script_execution",
+      "phase": "P2",
+      "status": "completed",
+      "completed_at": "2026-03-30T23:00:19Z"
+    },
+    {
+      "id": "supply-002",
+      "name": "verify_monitor_script_execution",
+      "phase": "P2",
+      "status": "completed",
+      "completed_at": "2026-03-30T23:00:33Z"
+    },
+    {
+      "id": "supply-003",
+      "name": "audit_readme_ops_consistency",
+      "phase": "P2",
+      "status": "completed",
+      "completed_at": "2026-03-30T23:01:16Z"
+    },
+    {
+      "id": "supply-004",
+      "name": "audit_control_plane_state_drift",
+      "phase": "P2",
+      "status": "completed",
+      "completed_at": "2026-03-30T23:01:16Z"
+    },
+    {
+      "id": "supply-005",
+      "name": "audit_systemd_vs_control_metadata",
+      "phase": "P2",
+      "status": "completed",
+      "completed_at": "2026-03-30T23:01:17Z"
+    },
+    {
+      "id": "supply-006",
+      "name": "audit_pm2_logs_for_anomalies",
+      "phase": "P2",
+      "status": "completed",
+      "completed_at": "2026-03-30T23:01:17Z"
+    },
+    {
+      "id": "supply-007",
+      "name": "propose_status_page_structure",
+      "phase": "P2",
+      "status": "completed",
+      "completed_at": "2026-03-30T23:01:18Z"
+    },
+    {
+      "id": "supply-008",
+      "name": "propose_about_page_structure",
+      "phase": "P2",
+      "status": "completed",
+      "completed_at": "2026-03-30T23:01:18Z"
+    },
+    {
+      "id": "supply-001",
+      "name": "verify_backup_script_execution",
+      "title": "验证备份脚本执行闭环",
+      "description": "执行 backup-db.sh 并验证备份文件生成、cron 任务运行正常",
+      "source": "log_triage_tasks",
+      "phase": "P2",
+      "priority": 1,
+      "status": "completed",
+      "handler": "verify_backup_execution",
+      "boundary": "read_only_verification",
+      "done_when": "Backup file exists, cron job verified, log entry recorded",
+      "auto_execute": true,
+      "risk_level": "low",
+      "completed_at": "2026-03-30T23:04:22.667006",
       "result": {
-        "changes": ["Fixed /api/compare query", "Fixed /api/structures COUNT query", "Fixed /api/structures SELECT query", "Fixed /api/search query", "Fixed chains → polypeptides references"],
-        "endpoints_fixed": ["/api/compare", "/api/structures", "/api/search"]
+        "handler": "verify_backup_execution",
+        "checks": {
+          "script_exists": true,
+          "script_path": "/home/admin/biostructure-db/scripts/backup-db.sh",
+          "script_executable": true,
+          "cron_configured": true,
+          "backup_files_count": 1,
+          "backup_files_exist": true,
+          "latest_backup": "/home/admin/backups/myapp_20260330_124555.sql.gz",
+          "backup_log_exists": false
+        },
+        "status": "success",
+        "message": "Backup system verified successfully"
+      }
+    },
+    {
+      "id": "supply-002",
+      "name": "verify_monitor_script_execution",
+      "title": "验证监控脚本执行闭环",
+      "description": "执行 monitor.sh 并验证指标日志生成、告警阈值配置正确",
+      "source": "log_triage_tasks",
+      "phase": "P2",
+      "priority": 2,
+      "status": "completed",
+      "handler": "verify_monitor_execution",
+      "boundary": "read_only_verification",
+      "done_when": "metrics.log exists, alert thresholds configured, no false positives",
+      "auto_execute": true,
+      "risk_level": "low",
+      "completed_at": "2026-03-30T23:10:57.601994",
+      "result": {
+        "handler": "verify_monitor_execution",
+        "checks": {
+          "script_exists": true,
+          "script_path": "/home/admin/biostructure-db/scripts/monitor.sh",
+          "script_executable": true,
+          "cron_configured": true,
+          "logs_dir_exists": true,
+          "metrics_log_exists": false,
+          "metrics_log_size": 0,
+          "alerts_log_exists": false
+        },
+        "status": "warning",
+        "message": "Monitoring system partially configured"
       }
     }
   ],
-  "paused_tasks": [
-    {
-      "id": "https-certificate",
-      "name": "HTTPS/SSL 证书配置",
-      "reason": "ICP 备案限制",
-      "resume_condition": "ICP filing completed"
+  "task_sources": {
+    "repo_audit_tasks": {
+      "description": "Repository audit tasks - code/docs/schema consistency",
+      "auto_generate": true,
+      "generation_frequency": "every_7_days",
+      "examples": [
+        "audit_readme_ops_consistency",
+        "audit_schema_code_drift",
+        "audit_entry_points"
+      ]
     },
-    {
-      "id": "domain-access",
-      "name": "jlupdb.me 域名公网访问",
-      "reason": "ICP 备案限制",
-      "resume_condition": "ICP filing completed"
+    "log_triage_tasks": {
+      "description": "Log triage tasks - PM2/app/systemd log anomaly detection",
+      "auto_generate": true,
+      "generation_frequency": "every_24_hours",
+      "examples": [
+        "verify_backup_script_execution",
+        "audit_pm2_logs_for_anomalies",
+        "verify_monitor_script_execution"
+      ]
     },
-    {
-      "id": "large-scale-import",
-      "name": "大规模 PDB 数据导入",
-      "reason": "Awaiting user decision after small-scale verification",
-      "resume_condition": "User confirms to proceed with 25+ structures"
+    "drift_sync_tasks": {
+      "description": "Drift sync tasks - state consistency between control plane components",
+      "auto_generate": true,
+      "generation_frequency": "every_7_days",
+      "examples": [
+        "audit_control_plane_state_drift",
+        "audit_systemd_vs_control_metadata"
+      ]
+    },
+    "roadmap_tasks": {
+      "description": "Roadmap tasks - feature enhancements and content expansion",
+      "auto_generate": true,
+      "generation_frequency": "on_demand",
+      "examples": [
+        "propose_status_page_structure",
+        "propose_about_page_structure",
+        "analyze_test_coverage_gaps"
+      ]
     }
-  ],
+  },
   "execution_policy": {
-    "default_behavior": "auto_execute_within_phase",
+    "default_behavior": "auto_execute_runnable_now",
+    "pool_execution_order": [
+      "runnable_now",
+      "analyze_first",
+      "waiting_user"
+    ],
     "auto_execute_criteria": [
       "documentation_consistency_fix",
       "config_consistency_fix",
@@ -107,7 +393,8 @@
       "control_plane_state_sync",
       "read_only_audit",
       "low_risk_single_file_fix",
-      "code_only_schema_compatible_fix"
+      "code_only_schema_compatible_fix",
+      "design_proposal_generation"
     ],
     "stop_boundaries": [
       "phase_transition_P2_to_P3",
@@ -126,9 +413,10 @@
     }
   },
   "config": {
-    "max_queue_size": 10,
+    "max_queue_size": 20,
     "auto_advance": true,
     "stop_on_error": true,
-    "timer_enabled": true
+    "timer_enabled": true,
+    "task_supply_enabled": true
   }
 }

@@ -75,32 +75,69 @@ def save_json(filepath: Path, data: dict) -> bool:
 def get_next_task(queue: dict, runtime: dict, policy: dict) -> Optional[dict]:
     """
     Get next executable task from queue.
+    Supports both legacy flat queue and new multi-pool structure.
     
     Returns:
         Task dict or None if no task available
     """
-    tasks = queue.get('queue', [])
+    # Check for new multi-pool structure first
+    task_pools = queue.get('task_pools', None)
     
-    # Filter pending tasks
-    pending = [t for t in tasks if t.get('status') == 'pending']
-    
-    if not pending:
-        logger.info("No pending tasks in queue")
+    if task_pools:
+        # New structure: iterate through pools in priority order
+        pool_order = policy.get('execution_policy', {}).get('pool_execution_order', 
+                      ['runnable_now', 'analyze_first', 'waiting_user'])
+        
+        for pool_name in pool_order:
+            pool = task_pools.get(pool_name, [])
+            pending = [t for t in pool if t.get('status') == 'pending']
+            
+            if not pending:
+                continue
+            
+            # Sort by priority
+            pending.sort(key=lambda x: x.get('priority', 999))
+            
+            # Check dependencies and auto_execute flag
+            completed_ids = [t['id'] for t in queue.get('completed', [])]
+            
+            for task in pending:
+                # Skip tasks that require manual execution
+                if not task.get('auto_execute', True):
+                    continue
+                
+                deps = task.get('depends_on', [])
+                if all(dep in completed_ids for dep in deps):
+                    task['_pool'] = pool_name  # Track which pool task came from
+                    return task
+        
+        logger.info("No pending tasks in any pool")
         return None
     
-    # Sort by priority
-    pending.sort(key=lambda x: x.get('priority', 999))
-    
-    # Check dependencies
-    completed_ids = [t['id'] for t in queue.get('completed', [])]
-    
-    for task in pending:
-        deps = task.get('depends_on', [])
-        if all(dep in completed_ids for dep in deps):
-            return task
-    
-    logger.info("No tasks ready (dependencies not met)")
-    return None
+    else:
+        # Legacy flat queue structure (backward compatibility)
+        tasks = queue.get('queue', [])
+        
+        # Filter pending tasks
+        pending = [t for t in tasks if t.get('status') == 'pending']
+        
+        if not pending:
+            logger.info("No pending tasks in queue")
+            return None
+        
+        # Sort by priority
+        pending.sort(key=lambda x: x.get('priority', 999))
+        
+        # Check dependencies
+        completed_ids = [t['id'] for t in queue.get('completed', [])]
+        
+        for task in pending:
+            deps = task.get('depends_on', [])
+            if all(dep in completed_ids for dep in deps):
+                return task
+        
+        logger.info("No tasks ready (dependencies not met)")
+        return None
 
 
 def execute_handler(task: dict, policy: dict) -> Tuple[bool, dict]:
@@ -156,30 +193,60 @@ def execute_handler(task: dict, policy: dict) -> Tuple[bool, dict]:
 
 
 def update_queue_after_task(queue: dict, task: dict, success: bool, result: dict) -> dict:
-    """Update queue after task execution."""
+    """Update queue after task execution. Supports multi-pool structure."""
+    pool_name = task.get('_pool', None)
+    
     if success:
         # Move task to completed
-        queue['completed'].append({
+        completed_task = {
             **task,
             'status': 'completed',
             'completed_at': datetime.now().isoformat(),
             'result': result
-        })
+        }
+        # Remove internal _pool field before storing
+        completed_task.pop('_pool', None)
+        queue['completed'].append(completed_task)
         
-        # Remove from pending queue
-        queue['queue'] = [t for t in queue['queue'] if t['id'] != task['id']]
-        
-        # Unblock dependent tasks
-        for t in queue['queue']:
-            if task['id'] in t.get('depends_on', []):
-                t['status'] = 'pending'
+        # Handle multi-pool structure
+        if pool_name and 'task_pools' in queue:
+            # Remove from the specific pool
+            task_pools = queue.get('task_pools', {})
+            pool = task_pools.get(pool_name, [])
+            task_pools[pool_name] = [t for t in pool if t['id'] != task['id']]
+            queue['task_pools'] = task_pools
+            
+            # Unblock dependent tasks in all pools
+            for pname, ppool in task_pools.items():
+                for t in ppool:
+                    if task['id'] in t.get('depends_on', []):
+                        t['status'] = 'pending'
+        else:
+            # Legacy flat queue structure
+            queue['queue'] = [t for t in queue['queue'] if t['id'] != task['id']]
+            
+            # Unblock dependent tasks
+            for t in queue['queue']:
+                if task['id'] in t.get('depends_on', []):
+                    t['status'] = 'pending'
     else:
         # Mark task as failed
-        for t in queue['queue']:
-            if t['id'] == task['id']:
-                t['status'] = 'failed'
-                t['error'] = result.get('error', 'unknown')
-                break
+        if pool_name and 'task_pools' in queue:
+            task_pools = queue.get('task_pools', {})
+            pool = task_pools.get(pool_name, [])
+            for t in pool:
+                if t['id'] == task['id']:
+                    t['status'] = 'failed'
+                    t['error'] = result.get('error', 'unknown')
+                    break
+            queue['task_pools'] = task_pools
+        else:
+            # Legacy flat queue structure
+            for t in queue['queue']:
+                if t['id'] == task['id']:
+                    t['status'] = 'failed'
+                    t['error'] = result.get('error', 'unknown')
+                    break
     
     queue['_meta']['updated'] = datetime.now().isoformat()
     return queue

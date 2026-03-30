@@ -1,8 +1,9 @@
-# OpenClaw Control Plane v1.1 - Schema Documentation
+# OpenClaw Control Plane v1.2 - Task Supply System
 
-**Version**: 1.1.0  
+**Version**: 1.2.0  
 **Frozen**: 2026-03-30  
-**Project**: biostructure-db
+**Project**: biostructure-db  
+**Feature**: Task Supply System v1.2 - Multi-pool queue with auto-generated tasks
 
 ---
 
@@ -304,4 +305,36 @@ sudo systemctl enable openclaw-agent.timer
 
 ---
 
-**Status**: v1.1 Schema Frozen (2026-03-30)
+## 9. Task Supply System v1.2
+
+The control plane now features an autonomous task supply system that continuously generates and manages tasks.
+
+### Task Pools
+
+| Pool | Purpose | Auto-execute |
+|------|---------|--------------|
+| `runnable_now` | Ready-to-execute tasks | Yes |
+| `analyze_first` | Tasks requiring analysis before action | No |
+| `waiting_user` | Tasks awaiting user decision | No |
+| `paused_by_policy` | Tasks paused by policy boundaries | No |
+
+### Task Sources
+
+| Source | Description | Frequency |
+|--------|-------------|-----------|
+| `repo_audit_tasks` | Code/docs/schema consistency audits | Every 7 days |
+| `log_triage_tasks` | PM2/app/systemd log anomaly detection | Every 24 hours |
+| `drift_sync_tasks` | State consistency between control plane components | Every 7 days |
+| `roadmap_tasks` | Feature enhancements and content expansion | On demand |
+
+### Execution Flow
+
+1. Agent loop checks `runnable_now` pool first
+2. Executes tasks with `auto_execute: true` in priority order
+3. Moves completed tasks to `completed` array
+4. Falls back to `analyze_first` if `runnable_now` is empty
+5. Respects `stop_boundaries` and `error_handling` policies
+
+---
+
+**Status**: v1.2 Task Supply System Active (2026-03-30)
