@@ -2,137 +2,13 @@
   "_meta": {
     "description": "OpenClaw Control Plane - Task Queue v1.2",
     "version": "1.2.0",
-    "updated": "2026-03-30T23:10:57.602077",
+    "updated": "2026-03-30T23:20:41.787997",
     "task_supply_system": "v1.2"
   },
   "current_phase": "P2_DATA_CONTENT",
   "task_pools": {
-    "runnable_now": [
-      {
-        "id": "supply-003",
-        "name": "audit_readme_ops_consistency",
-        "title": "审计 README 与 ops 文档一致性",
-        "description": "检查 README.md 中的启动说明、API 端点与 ops/project_state.md 是否一致",
-        "source": "repo_audit_tasks",
-        "phase": "P2",
-        "priority": 3,
-        "status": "pending",
-        "handler": "audit_readme_ops",
-        "boundary": "read_only_audit",
-        "done_when": "Inconsistencies documented, fix recommendations generated",
-        "auto_execute": true,
-        "risk_level": "low"
-      },
-      {
-        "id": "supply-004",
-        "name": "audit_control_plane_state_drift",
-        "title": "审计控制平面状态漂移",
-        "description": "检查 queue.json / runtime_state.json / ops/project_state.md 三者状态是否一致",
-        "source": "drift_sync_tasks",
-        "phase": "P2",
-        "priority": 4,
-        "status": "pending",
-        "handler": "audit_state_drift",
-        "boundary": "read_only_audit",
-        "done_when": "State drift documented, sync recommendations generated",
-        "auto_execute": true,
-        "risk_level": "low"
-      },
-      {
-        "id": "supply-005",
-        "name": "audit_systemd_vs_control_metadata",
-        "title": "审计 systemd 与控制平面元数据一致性",
-        "description": "检查 systemd timer/service 实际状态与 control/queue.json config.timer_enabled 是否一致",
-        "source": "drift_sync_tasks",
-        "phase": "P2",
-        "priority": 5,
-        "status": "pending",
-        "handler": "audit_systemd_drift",
-        "boundary": "read_only_audit",
-        "done_when": "systemd state documented, metadata synced",
-        "auto_execute": true,
-        "risk_level": "low"
-      },
-      {
-        "id": "supply-006",
-        "name": "audit_pm2_logs_for_anomalies",
-        "title": "PM2 日志异常巡检",
-        "description": "扫描 PM2 日志中的 error/warning 模式，生成异常报告",
-        "source": "log_triage_tasks",
-        "phase": "P2",
-        "priority": 6,
-        "status": "pending",
-        "handler": "audit_pm2_logs",
-        "boundary": "read_only_audit",
-        "done_when": "Log anomalies documented, severity classified",
-        "auto_execute": true,
-        "risk_level": "low"
-      },
-      {
-        "id": "supply-007",
-        "name": "propose_status_page_structure",
-        "title": "提议状态页面结构",
-        "description": "为 /status 页面生成结构建议（显示 structures count, atoms, methods, uptime 等）",
-        "source": "roadmap_tasks",
-        "phase": "P2",
-        "priority": 7,
-        "status": "pending",
-        "handler": "propose_status_page",
-        "boundary": "design_proposal_only",
-        "done_when": "Status page structure documented with API endpoints and UI mockup",
-        "auto_execute": true,
-        "risk_level": "low"
-      },
-      {
-        "id": "supply-008",
-        "name": "propose_about_page_structure",
-        "title": "提议关于页面结构",
-        "description": "为 /about 页面生成结构建议（项目介绍、技术栈、数据来源等）",
-        "source": "roadmap_tasks",
-        "phase": "P2",
-        "priority": 8,
-        "status": "pending",
-        "handler": "propose_about_page",
-        "boundary": "design_proposal_only",
-        "done_when": "About page structure documented",
-        "auto_execute": true,
-        "risk_level": "low"
-      }
-    ],
-    "analyze_first": [
-      {
-        "id": "analyze-001",
-        "name": "analyze_test_coverage_gaps",
-        "title": "分析测试覆盖缺口",
-        "description": "分析当前测试覆盖率，识别未覆盖的 API 端点和关键函数",
-        "source": "roadmap_tasks",
-        "phase": "P2",
-        "priority": 10,
-        "status": "pending",
-        "handler": "analyze_test_coverage",
-        "boundary": "analysis_then_recommend",
-        "done_when": "Coverage gaps identified, test priorities recommended",
-        "auto_execute": false,
-        "risk_level": "medium",
-        "analysis_output": "control/audits/test_coverage_analysis.md"
-      },
-      {
-        "id": "analyze-002",
-        "name": "analyze_api_performance_baseline",
-        "title": "分析 API 性能基线",
-        "description": "建立 API 响应时间基线，识别潜在性能瓶颈",
-        "source": "roadmap_tasks",
-        "phase": "P2",
-        "priority": 11,
-        "status": "pending",
-        "handler": "analyze_api_performance",
-        "boundary": "read_only_analysis",
-        "done_when": "Performance baseline established, bottlenecks identified",
-        "auto_execute": false,
-        "risk_level": "medium",
-        "analysis_output": "control/audits/api_performance_baseline.md"
-      }
-    ],
+    "runnable_now": [],
+    "analyze_first": [],
     "waiting_user": [],
     "paused_by_policy": [
       {
@@ -335,6 +211,436 @@
         },
         "status": "warning",
         "message": "Monitoring system partially configured"
+      }
+    },
+    {
+      "id": "supply-003",
+      "name": "audit_readme_ops_consistency",
+      "title": "审计 README 与 ops 文档一致性",
+      "description": "检查 README.md 中的启动说明、API 端点与 ops/project_state.md 是否一致",
+      "source": "repo_audit_tasks",
+      "phase": "P2",
+      "priority": 3,
+      "status": "completed",
+      "handler": "audit_readme_ops",
+      "boundary": "read_only_audit",
+      "done_when": "Inconsistencies documented, fix recommendations generated",
+      "auto_execute": true,
+      "risk_level": "low",
+      "completed_at": "2026-03-30T23:20:31.973811",
+      "result": {
+        "handler": "audit_readme_ops",
+        "status": "success",
+        "findings": {
+          "readme_start_commands": [
+            "npm start",
+            "pm2 start src/app.js"
+          ],
+          "ops_start_commands": [],
+          "readme_api_endpoints": [
+            "/api/structures/:pdbId`",
+            "/api/structures`",
+            "/api/bio/gene/:name`",
+            "/api/stats](https://jlupdb.me/api/stats)",
+            "/api/bio/search/sequence`",
+            "/api/bio/organism/:name`",
+            "/api/stats",
+            "/api/stats`",
+            "/api/import/:pdbId`",
+            "/api/bio/stats/detailed`",
+            "/api/bio/stats`"
+          ],
+          "runtime_phase": "P2_DATA_CONTENT",
+          "audit_timestamp": "2026-03-30T23:20:31.961931"
+        },
+        "inconsistencies": [],
+        "message": "README and ops documentation are consistent",
+        "report_file": "/home/admin/biostructure-db/control/audits/readme_ops_audit.json"
+      }
+    },
+    {
+      "id": "supply-004",
+      "name": "audit_control_plane_state_drift",
+      "title": "审计控制平面状态漂移",
+      "description": "检查 queue.json / runtime_state.json / ops/project_state.md 三者状态是否一致",
+      "source": "drift_sync_tasks",
+      "phase": "P2",
+      "priority": 4,
+      "status": "completed",
+      "handler": "audit_state_drift",
+      "boundary": "read_only_audit",
+      "done_when": "State drift documented, sync recommendations generated",
+      "auto_execute": true,
+      "risk_level": "low",
+      "completed_at": "2026-03-30T23:20:35.065739",
+      "result": {
+        "handler": "audit_state_drift",
+        "status": "success",
+        "findings": {
+          "queue_phase": "P2_DATA_CONTENT",
+          "runtime_phase": "P2_DATA_CONTENT",
+          "task_pools": {
+            "runnable_now": 5,
+            "analyze_first": 2,
+            "waiting_user": 0,
+            "paused_by_policy": 0,
+            "completed": 20
+          },
+          "timer_enabled": true,
+          "last_activity": "2026-03-30T23:20:31.973855"
+        },
+        "drift_detected": [],
+        "message": "Control plane state is consistent",
+        "report_file": "/home/admin/biostructure-db/control/audits/state_drift_audit.json",
+        "audit_timestamp": "2026-03-30T23:20:35.054180"
+      }
+    },
+    {
+      "id": "supply-005",
+      "name": "audit_systemd_vs_control_metadata",
+      "title": "审计 systemd 与控制平面元数据一致性",
+      "description": "检查 systemd timer/service 实际状态与 control/queue.json config.timer_enabled 是否一致",
+      "source": "drift_sync_tasks",
+      "phase": "P2",
+      "priority": 5,
+      "status": "completed",
+      "handler": "audit_systemd_drift",
+      "boundary": "read_only_audit",
+      "done_when": "systemd state documented, metadata synced",
+      "auto_execute": true,
+      "risk_level": "low",
+      "completed_at": "2026-03-30T23:20:35.300240",
+      "result": {
+        "handler": "audit_systemd_drift",
+        "status": "success",
+        "findings": {
+          "service": {
+            "exists": true,
+            "enabled": false,
+            "active": false
+          },
+          "timer": {
+            "exists": true,
+            "enabled": true,
+            "active": true
+          },
+          "metadata_timer_enabled": true
+        },
+        "drift_detected": [],
+        "message": "Systemd and control plane metadata are in sync",
+        "report_file": "/home/admin/biostructure-db/control/audits/systemd_drift_audit.json",
+        "audit_timestamp": "2026-03-30T23:20:35.284695"
+      }
+    },
+    {
+      "id": "supply-006",
+      "name": "audit_pm2_logs_for_anomalies",
+      "title": "PM2 日志异常巡检",
+      "description": "扫描 PM2 日志中的 error/warning 模式，生成异常报告",
+      "source": "log_triage_tasks",
+      "phase": "P2",
+      "priority": 6,
+      "status": "completed",
+      "handler": "audit_pm2_logs",
+      "boundary": "read_only_audit",
+      "done_when": "Log anomalies documented, severity classified",
+      "auto_execute": true,
+      "risk_level": "low",
+      "completed_at": "2026-03-30T23:20:35.449943",
+      "result": {
+        "handler": "audit_pm2_logs",
+        "status": "success",
+        "findings": {
+          "stdout_log": {
+            "exists": true,
+            "size": 3744,
+            "lines": 64,
+            "errors": [],
+            "warnings": [],
+            "error_count": 0,
+            "warning_count": 0
+          },
+          "stderr_log": {
+            "exists": true,
+            "size": 0,
+            "lines": 0,
+            "errors": [],
+            "warnings": [],
+            "error_count": 0,
+            "warning_count": 0
+          },
+          "total_errors": 0,
+          "total_warnings": 0
+        },
+        "anomalies": [],
+        "message": "PM2 logs are clean - no significant anomalies",
+        "report_file": "/home/admin/biostructure-db/control/audits/pm2_logs_audit.json",
+        "audit_timestamp": "2026-03-30T23:20:35.438878"
+      }
+    },
+    {
+      "id": "supply-007",
+      "name": "propose_status_page_structure",
+      "title": "提议状态页面结构",
+      "description": "为 /status 页面生成结构建议（显示 structures count, atoms, methods, uptime 等）",
+      "source": "roadmap_tasks",
+      "phase": "P2",
+      "priority": 7,
+      "status": "completed",
+      "handler": "propose_status_page",
+      "boundary": "design_proposal_only",
+      "done_when": "Status page structure documented with API endpoints and UI mockup",
+      "auto_execute": true,
+      "risk_level": "low",
+      "completed_at": "2026-03-30T23:20:35.601397",
+      "result": {
+        "handler": "propose_status_page",
+        "status": "success",
+        "proposal": {
+          "page": "/status",
+          "title": "System Status",
+          "sections": [
+            {
+              "name": "API Health",
+              "endpoint": "/api/health",
+              "display": [
+                "status",
+                "database",
+                "uptime"
+              ]
+            },
+            {
+              "name": "Database Statistics",
+              "endpoint": "/api/stats",
+              "display": [
+                "totalStructures",
+                "totalAtoms",
+                "methods"
+              ]
+            },
+            {
+              "name": "System Metrics",
+              "source": "control/audits/api_performance_baseline.md",
+              "display": [
+                "response_time",
+                "error_rate"
+              ]
+            },
+            {
+              "name": "Control Plane Status",
+              "source": "control/runtime_state.json",
+              "display": [
+                "phase",
+                "phase_status",
+                "last_activity"
+              ]
+            }
+          ],
+          "refresh_interval": "30s",
+          "auto_refresh": true
+        },
+        "implementation_notes": [
+          "Create public/status.html with embedded JavaScript for auto-refresh",
+          "Use fetch() to poll /api/health and /api/stats endpoints",
+          "Display uptime in human-readable format (days, hours, minutes)",
+          "Add visual indicators (green/yellow/red) for health status"
+        ],
+        "proposal_file": "/home/admin/biostructure-db/control/audits/status_page_proposal.json",
+        "message": "Status page structure proposal generated",
+        "audit_timestamp": "2026-03-30T23:20:35.589937"
+      }
+    },
+    {
+      "id": "supply-008",
+      "name": "propose_about_page_structure",
+      "title": "提议关于页面结构",
+      "description": "为 /about 页面生成结构建议（项目介绍、技术栈、数据来源等）",
+      "source": "roadmap_tasks",
+      "phase": "P2",
+      "priority": 8,
+      "status": "completed",
+      "handler": "propose_about_page",
+      "boundary": "design_proposal_only",
+      "done_when": "About page structure documented",
+      "auto_execute": true,
+      "risk_level": "low",
+      "completed_at": "2026-03-30T23:20:35.751981",
+      "result": {
+        "handler": "propose_about_page",
+        "status": "success",
+        "proposal": {
+          "page": "/about",
+          "title": "About BioStructure DB",
+          "sections": [
+            {
+              "name": "Project Overview",
+              "content_source": "README.md",
+              "display": [
+                "description",
+                "core_features"
+              ]
+            },
+            {
+              "name": "Technical Stack",
+              "content_source": "README.md",
+              "display": [
+                "backend",
+                "database",
+                "cache",
+                "deployment"
+              ]
+            },
+            {
+              "name": "Data Sources",
+              "content": [
+                "PDB (Protein Data Bank)",
+                "UniProt",
+                "Pfam"
+              ]
+            },
+            {
+              "name": "API Documentation",
+              "link": "/api/docs"
+            },
+            {
+              "name": "System Status",
+              "link": "/status"
+            },
+            {
+              "name": "GitHub Repository",
+              "link": "https://github.com/knight-zmz/biostructure-db"
+            }
+          ]
+        },
+        "implementation_notes": [
+          "Create public/about.html with static content from README.md",
+          "Include project description and core features",
+          "List technical stack with version information",
+          "Add links to API docs, status page, and GitHub",
+          "Consider adding a changelog section linked to GitHub releases"
+        ],
+        "proposal_file": "/home/admin/biostructure-db/control/audits/about_page_proposal.json",
+        "message": "About page structure proposal generated",
+        "audit_timestamp": "2026-03-30T23:20:35.740839"
+      }
+    },
+    {
+      "id": "analyze-001",
+      "name": "analyze_test_coverage_gaps",
+      "title": "分析测试覆盖缺口",
+      "description": "分析当前测试覆盖率，识别未覆盖的 API 端点和关键函数",
+      "source": "roadmap_tasks",
+      "phase": "P2",
+      "priority": 10,
+      "status": "completed",
+      "handler": "analyze_test_coverage",
+      "boundary": "analysis_then_recommend",
+      "done_when": "Coverage gaps identified, test priorities recommended",
+      "auto_execute": true,
+      "risk_level": "medium",
+      "analysis_output": "control/audits/test_coverage_analysis.md",
+      "execution_model": "analyze_then_decide",
+      "completed_at": "2026-03-30T23:20:38.338548",
+      "result": {
+        "handler": "analyze_test_coverage",
+        "status": "success",
+        "analysis": {
+          "test_files_found": [
+            "tests/unit/pdb-parser.test.js",
+            "tests/unit/api.test.js"
+          ],
+          "api_endpoints": [
+            "/api/import/:pdbId",
+            "/api/structures/:pdbId/secondary-structure",
+            "/api/docs",
+            "/api/cache/stats",
+            "/api/stats",
+            "/api/structures/:pdbId",
+            "/api/structures/:pdbId/residues",
+            "/api/health",
+            "/api/structures",
+            "/api/cache/clear",
+            "/api/search",
+            "/api/structures/recent/list",
+            "/api/import-samples",
+            "/api/structures/:pdbId/atoms",
+            "/api/search/suggest",
+            "/api/compare"
+          ],
+          "coverage_gaps": [
+            "No unit tests for /api/compare endpoint",
+            "No integration tests for database operations",
+            "No tests for error handling paths"
+          ],
+          "recommendations": [
+            "Add unit tests for /api/compare endpoint",
+            "Add integration tests for database schema changes",
+            "Add error handling tests for all API endpoints",
+            "Consider using jest coverage for automated tracking"
+          ]
+        },
+        "report_file": "/home/admin/biostructure-db/control/audits/test_coverage_analysis.json",
+        "message": "Test coverage analysis completed",
+        "timestamp": "2026-03-30T23:20:38.327440"
+      }
+    },
+    {
+      "id": "analyze-002",
+      "name": "analyze_api_performance_baseline",
+      "title": "分析 API 性能基线",
+      "description": "建立 API 响应时间基线，识别潜在性能瓶颈",
+      "source": "roadmap_tasks",
+      "phase": "P2",
+      "priority": 11,
+      "status": "completed",
+      "handler": "analyze_api_performance",
+      "boundary": "read_only_analysis",
+      "done_when": "Performance baseline established, bottlenecks identified",
+      "auto_execute": true,
+      "risk_level": "medium",
+      "analysis_output": "control/audits/api_performance_baseline.md",
+      "execution_model": "analyze_then_decide",
+      "completed_at": "2026-03-30T23:20:41.787960",
+      "result": {
+        "handler": "analyze_api_performance",
+        "status": "success",
+        "analysis": {
+          "endpoints_tested": [
+            "/api/health",
+            "/api/stats",
+            "/api/structures?limit=5"
+          ],
+          "baseline": {
+            "/api/health": {
+              "avg_ms": 13.96,
+              "min_ms": 7.65,
+              "max_ms": 26.42,
+              "errors": 0
+            },
+            "/api/stats": {
+              "avg_ms": 9.05,
+              "min_ms": 8.04,
+              "max_ms": 10.43,
+              "errors": 0
+            },
+            "/api/structures?limit=5": {
+              "avg_ms": 10.07,
+              "min_ms": 6.31,
+              "max_ms": 17.12,
+              "errors": 0
+            }
+          },
+          "bottlenecks": [],
+          "recommendations": [
+            "Monitor /api/stats response time as data grows",
+            "Consider caching for frequently accessed endpoints",
+            "Add database query optimization if response times exceed 500ms",
+            "Set up alerting for response times > 1000ms"
+          ]
+        },
+        "report_file": "/home/admin/biostructure-db/control/audits/api_performance_baseline.json",
+        "message": "API performance baseline analysis completed",
+        "timestamp": "2026-03-30T23:20:41.767429"
       }
     }
   ],
