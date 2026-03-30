@@ -285,6 +285,110 @@ def update_runtime_state(runtime: dict, task: dict, success: bool) -> dict:
     return runtime
 
 
+def generate_tasks_if_needed(queue: dict) -> dict:
+    """
+    Minimal task auto-supply: generate tasks from templates when queue is empty.
+    
+    Deduplication: per-source cooldown window via _meta.generation_log.
+    Only generates low-risk tasks (read-only audits, log checks, proposals).
+    """
+    task_pools = queue.get('task_pools', {})
+    runnable_now = task_pools.get('runnable_now', [])
+    sources = queue.get('task_sources', {})
+    meta = queue.get('_meta', {})
+    
+    # Initialize generation log if not present
+    if 'generation_log' not in meta:
+        meta['generation_log'] = {}
+    
+    generation_log = meta['generation_log']
+    now = datetime.now()
+    generated_count = 0
+    
+    for source_name, source_def in sources.items():
+        if not source_def.get('auto_generate', False):
+            continue
+        
+        templates = source_def.get('templates', [])
+        if not templates:
+            continue
+        
+        cooldown_hours = source_def.get('cooldown_hours', 24)
+        
+        # Check if this source was recently generated
+        last_gen_str = generation_log.get(source_name)
+        if last_gen_str:
+            try:
+                last_gen = datetime.fromisoformat(last_gen_str)
+                hours_since = (now - last_gen).total_seconds() / 3600
+                if hours_since < cooldown_hours:
+                    continue  # Still in cooldown
+            except (ValueError, TypeError):
+                pass  # Invalid timestamp, allow generation
+        
+        # Check if any template is not already in runnable_now or completed
+        completed_ids = {t['id'] for t in queue.get('completed', [])}
+        runnable_ids = {t['id'] for t in runnable_now}
+        
+        for template in templates:
+            template_id = template.get('template_id', '')
+            # Generate a stable task ID from template
+            task_id = f"auto-{template_id}"
+            
+            # Skip if already running or recently completed
+            if task_id in runnable_ids:
+                continue
+            if task_id in completed_ids:
+                # Check if completed recently (within 2x cooldown)
+                for ct in queue.get('completed', []):
+                    if ct['id'] == task_id:
+                        completed_at = ct.get('completed_at', '')
+                        try:
+                            cat = datetime.fromisoformat(completed_at)
+                            hours_since = (now - cat).total_seconds() / 3600
+                            if hours_since < cooldown_hours * 2:
+                                continue  # Skip, recently completed
+                        except (ValueError, TypeError):
+                            pass
+            
+            # Generate task
+            new_task = {
+                'id': task_id,
+                'name': template.get('name', template_id),
+                'title': template.get('title', ''),
+                'source': source_name,
+                'phase': template.get('phase', 'P2'),
+                'priority': template.get('priority', 5),
+                'status': 'pending',
+                'handler': template.get('handler', ''),
+                'boundary': template.get('boundary', 'read_only_audit'),
+                'done_when': template.get('done_when', ''),
+                'auto_execute': True,
+                'risk_level': template.get('risk_level', 'low'),
+                'generated_at': now.isoformat(),
+                'template_id': template_id
+            }
+            
+            target_pool = template.get('target_pool', 'runnable_now')
+            if target_pool in task_pools:
+                task_pools[target_pool].append(new_task)
+            else:
+                task_pools[target_pool] = [new_task]
+            
+            generated_count += 1
+        
+        # Update generation log for this source
+        generation_log[source_name] = now.isoformat()
+    
+    if generated_count > 0:
+        queue['task_pools'] = task_pools
+        meta['generation_log'] = generation_log
+        queue['_meta'] = meta
+        queue['_meta']['updated'] = now.isoformat()
+    
+    return queue, generated_count
+
+
 def main():
     """Main execution loop."""
     logger.info("=" * 60)
@@ -311,14 +415,23 @@ def main():
     
     if not task:
         logger.info("No runnable task - queue is empty or all tasks blocked")
-        # Always update runtime state even when no task
-        runtime.setdefault('current_state', {})['last_activity'] = datetime.now().isoformat()
-        runtime.setdefault('current_state', {})['last_activity_type'] = 'agent_loop.no_task'
-        runtime['last_run_at'] = datetime.now().isoformat()
-        runtime.setdefault('_meta', {})['updated'] = datetime.now().isoformat()
-        save_json(CONTROL_DIR / "runtime_state.json", runtime)
-        logger.info(f"Updated runtime_state.json with last_run_at")
-        sys.exit(0)
+        # Try to auto-supply tasks from templates
+        queue, generated = generate_tasks_if_needed(queue)
+        if generated > 0:
+            logger.info(f"Auto-supplied {generated} tasks from templates")
+            save_json(CONTROL_DIR / "queue.json", queue)
+            # Re-attempt to get a task
+            task = get_next_task(queue, runtime, policy)
+        
+        if not task:
+            logger.info("Still no runnable task after auto-supply")
+            runtime.setdefault('current_state', {})['last_activity'] = datetime.now().isoformat()
+            runtime.setdefault('current_state', {})['last_activity_type'] = 'agent_loop.no_task'
+            runtime['last_run_at'] = datetime.now().isoformat()
+            runtime.setdefault('_meta', {})['updated'] = datetime.now().isoformat()
+            save_json(CONTROL_DIR / "runtime_state.json", runtime)
+            logger.info(f"Updated runtime_state.json with last_run_at")
+            sys.exit(0)
     
     logger.info(f"Selected task: {task['id']} - {task['name']}")
     

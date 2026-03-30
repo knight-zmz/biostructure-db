@@ -1,15 +1,68 @@
 {
   "_meta": {
-    "description": "OpenClaw Control Plane - Task Queue v1.2",
-    "version": "1.2.0",
-    "updated": "2026-03-31T00:12:05.392182",
-    "task_supply_system": "v1.2",
-    "timer_verify_mode": true,
-    "timer_verify_note": "2 low-risk tasks injected for timer auto-trigger verification"
+    "description": "OpenClaw Control Plane - Task Queue v1.3",
+    "version": "1.3.0",
+    "updated": "2026-03-31T00:30:07.367551",
+    "task_supply_system": "v1.3",
+    "generation_log": {
+      "repo_audit_tasks": "2026-03-31T00:17:35.835266",
+      "log_triage_tasks": "2026-03-31T00:17:35.835266",
+      "drift_sync_tasks": "2026-03-31T00:17:35.835266",
+      "roadmap_tasks": "2026-03-31T00:17:35.835266"
+    }
   },
   "current_phase": "P2_DATA_CONTENT",
   "task_pools": {
-    "runnable_now": [],
+    "runnable_now": [
+      {
+        "id": "auto-repo-audit-entry-points",
+        "name": "audit_entry_point_consistency",
+        "title": "审计代码入口点与 package.json 一致性",
+        "source": "repo_audit_tasks",
+        "phase": "P2",
+        "priority": 6,
+        "status": "pending",
+        "handler": "verify_entry_points",
+        "boundary": "read_only_audit",
+        "done_when": "Entry points verified",
+        "auto_execute": true,
+        "risk_level": "low",
+        "generated_at": "2026-03-31T00:17:35.835266",
+        "template_id": "repo-audit-entry-points"
+      },
+      {
+        "id": "auto-drift-systemd",
+        "name": "audit_systemd_vs_control_metadata",
+        "title": "审计 systemd 与控制平面元数据一致性",
+        "source": "drift_sync_tasks",
+        "phase": "P2",
+        "priority": 6,
+        "status": "pending",
+        "handler": "audit_systemd_drift",
+        "boundary": "read_only_audit",
+        "done_when": "systemd state documented",
+        "auto_execute": true,
+        "risk_level": "low",
+        "generated_at": "2026-03-31T00:17:35.835266",
+        "template_id": "drift-systemd"
+      },
+      {
+        "id": "auto-roadmap-status-page",
+        "name": "propose_status_page_structure",
+        "title": "提议状态页面结构",
+        "source": "roadmap_tasks",
+        "phase": "P2",
+        "priority": 8,
+        "status": "pending",
+        "handler": "propose_status_page",
+        "boundary": "design_proposal_only",
+        "done_when": "Status page structure documented",
+        "auto_execute": true,
+        "risk_level": "low",
+        "generated_at": "2026-03-31T00:17:35.835266",
+        "template_id": "roadmap-status-page"
+      }
+    ],
     "analyze_first": [],
     "waiting_user": [],
     "paused_by_policy": [
@@ -948,46 +1001,368 @@
       },
       "git_state": "uncommitted",
       "lifecycle_state": "verified"
+    },
+    {
+      "id": "auto-log-triage-api-health",
+      "name": "verify_api_health",
+      "title": "验证 API 健康状态",
+      "source": "log_triage_tasks",
+      "phase": "P2",
+      "priority": 3,
+      "status": "failed",
+      "handler": "verify_api_health",
+      "boundary": "read_only_verification",
+      "done_when": "Health endpoint checked",
+      "auto_execute": true,
+      "risk_level": "low",
+      "generated_at": "2026-03-31T00:17:35.835266",
+      "template_id": "log-triage-api-health",
+      "completed_at": "2026-03-31T00:17:35.951705",
+      "result": {
+        "error": "",
+        "output": "{\"handler\": \"verify_api_health\", \"status\": \"failed\", \"error\": \"<urlopen error [Errno 111] Connection refused>\", \"timestamp\": \"2026-03-31T00:17:35.931745\"}\n"
+      },
+      "verification": {
+        "handler_success": false,
+        "log_recorded": true,
+        "runtime_state_updated": true,
+        "verified": false
+      },
+      "git_state": "uncommitted",
+      "lifecycle_state": "implemented"
+    },
+    {
+      "id": "auto-log-triage-pm2",
+      "name": "audit_pm2_logs_for_anomalies",
+      "title": "PM2 日志异常巡检",
+      "source": "log_triage_tasks",
+      "phase": "P2",
+      "priority": 4,
+      "status": "completed",
+      "handler": "audit_pm2_logs",
+      "boundary": "read_only_audit",
+      "done_when": "Log anomalies documented",
+      "auto_execute": true,
+      "risk_level": "low",
+      "generated_at": "2026-03-31T00:17:35.835266",
+      "template_id": "log-triage-pm2",
+      "completed_at": "2026-03-31T00:17:44.533632",
+      "result": {
+        "handler": "audit_pm2_logs",
+        "status": "attention_needed",
+        "findings": {
+          "stdout_log": {
+            "exists": true,
+            "size": 3978,
+            "lines": 68,
+            "errors": [],
+            "warnings": [],
+            "error_count": 0,
+            "warning_count": 0
+          },
+          "stderr_log": {
+            "exists": true,
+            "size": 40272,
+            "lines": 576,
+            "errors": [
+              {
+                "line": 482,
+                "content": "Error: DB_PASSWORD environment variable is required. Please create .env file from .env.example"
+              },
+              {
+                "line": 494,
+                "content": "Error: DB_PASSWORD environment variable is required. Please create .env file from .env.example"
+              },
+              {
+                "line": 506,
+                "content": "Error: DB_PASSWORD environment variable is required. Please create .env file from .env.example"
+              },
+              {
+                "line": 518,
+                "content": "Error: DB_PASSWORD environment variable is required. Please create .env file from .env.example"
+              },
+              {
+                "line": 530,
+                "content": "Error: DB_PASSWORD environment variable is required. Please create .env file from .env.example"
+              },
+              {
+                "line": 542,
+                "content": "Error: DB_PASSWORD environment variable is required. Please create .env file from .env.example"
+              },
+              {
+                "line": 554,
+                "content": "Error: DB_PASSWORD environment variable is required. Please create .env file from .env.example"
+              },
+              {
+                "line": 566,
+                "content": "Error: DB_PASSWORD environment variable is required. Please create .env file from .env.example"
+              }
+            ],
+            "warnings": [],
+            "error_count": 8,
+            "warning_count": 0
+          },
+          "total_errors": 8,
+          "total_warnings": 0
+        },
+        "anomalies": [
+          {
+            "type": "errors_detected",
+            "count": 8,
+            "severity": "medium",
+            "recent_errors": [
+              {
+                "line": 518,
+                "content": "Error: DB_PASSWORD environment variable is required. Please create .env file from .env.example"
+              },
+              {
+                "line": 530,
+                "content": "Error: DB_PASSWORD environment variable is required. Please create .env file from .env.example"
+              },
+              {
+                "line": 542,
+                "content": "Error: DB_PASSWORD environment variable is required. Please create .env file from .env.example"
+              },
+              {
+                "line": 554,
+                "content": "Error: DB_PASSWORD environment variable is required. Please create .env file from .env.example"
+              },
+              {
+                "line": 566,
+                "content": "Error: DB_PASSWORD environment variable is required. Please create .env file from .env.example"
+              }
+            ]
+          }
+        ],
+        "message": "Found 1 anomalies in PM2 logs",
+        "report_file": "/home/admin/biostructure-db/control/audits/pm2_logs_audit.json",
+        "audit_timestamp": "2026-03-31T00:17:44.521620"
+      },
+      "verification": {
+        "handler_success": true,
+        "log_recorded": true,
+        "runtime_state_updated": true,
+        "verified": true
+      },
+      "git_state": "uncommitted",
+      "lifecycle_state": "verified"
+    },
+    {
+      "id": "auto-repo-audit-readme-ops",
+      "name": "audit_readme_ops_consistency",
+      "title": "审计 README 与 ops 文档一致性",
+      "source": "repo_audit_tasks",
+      "phase": "P2",
+      "priority": 5,
+      "status": "completed",
+      "handler": "audit_readme_ops",
+      "boundary": "read_only_audit",
+      "done_when": "Inconsistencies documented",
+      "auto_execute": true,
+      "risk_level": "low",
+      "generated_at": "2026-03-31T00:17:35.835266",
+      "template_id": "repo-audit-readme-ops",
+      "completed_at": "2026-03-31T00:20:51.913948",
+      "result": {
+        "handler": "audit_readme_ops",
+        "status": "success",
+        "findings": {
+          "readme_start_commands": [
+            "npm start",
+            "pm2 start src/app.js"
+          ],
+          "ops_start_commands": [],
+          "readme_api_endpoints": [
+            "/api/bio/stats`",
+            "/api/structures/:pdbId`",
+            "/api/bio/organism/:name`",
+            "/api/structures`",
+            "/api/stats",
+            "/api/bio/gene/:name`",
+            "/api/stats`",
+            "/api/stats](https://jlupdb.me/api/stats)",
+            "/api/import/:pdbId`",
+            "/api/bio/search/sequence`",
+            "/api/bio/stats/detailed`"
+          ],
+          "runtime_phase": "P2_DATA_CONTENT",
+          "audit_timestamp": "2026-03-31T00:20:51.901434"
+        },
+        "inconsistencies": [],
+        "message": "README and ops documentation are consistent",
+        "report_file": "/home/admin/biostructure-db/control/audits/readme_ops_audit.json"
+      },
+      "verification": {
+        "handler_success": true,
+        "log_recorded": true,
+        "runtime_state_updated": true,
+        "verified": true
+      },
+      "git_state": "uncommitted",
+      "lifecycle_state": "verified"
+    },
+    {
+      "id": "auto-drift-state",
+      "name": "audit_control_plane_state_drift",
+      "title": "审计控制平面状态漂移",
+      "source": "drift_sync_tasks",
+      "phase": "P2",
+      "priority": 5,
+      "status": "completed",
+      "handler": "audit_state_drift",
+      "boundary": "read_only_audit",
+      "done_when": "State drift documented",
+      "auto_execute": true,
+      "risk_level": "low",
+      "generated_at": "2026-03-31T00:17:35.835266",
+      "template_id": "drift-state",
+      "completed_at": "2026-03-31T00:30:07.367482",
+      "result": {
+        "handler": "audit_state_drift",
+        "status": "success",
+        "findings": {
+          "queue_phase": "P2_DATA_CONTENT",
+          "runtime_phase": "P2_DATA_CONTENT",
+          "task_pools": {
+            "runnable_now": 4,
+            "analyze_first": 0,
+            "waiting_user": 0,
+            "paused_by_policy": 0,
+            "completed": 32
+          },
+          "timer_enabled": true,
+          "last_activity": "2026-03-31T00:20:51.914020"
+        },
+        "drift_detected": [],
+        "message": "Control plane state is consistent",
+        "report_file": "/home/admin/biostructure-db/control/audits/state_drift_audit.json",
+        "audit_timestamp": "2026-03-31T00:30:07.356162"
+      },
+      "verification": {
+        "handler_success": true,
+        "log_recorded": true,
+        "runtime_state_updated": true,
+        "verified": true
+      },
+      "git_state": "uncommitted",
+      "lifecycle_state": "verified"
     }
   ],
   "task_sources": {
     "repo_audit_tasks": {
       "description": "Repository audit tasks - code/docs/schema consistency",
       "auto_generate": true,
-      "generation_frequency": "every_7_days",
-      "examples": [
-        "audit_readme_ops_consistency",
-        "audit_schema_code_drift",
-        "audit_entry_points"
+      "generation_frequency_hours": 168,
+      "cooldown_hours": 72,
+      "templates": [
+        {
+          "template_id": "repo-audit-readme-ops",
+          "name": "audit_readme_ops_consistency",
+          "title": "审计 README 与 ops 文档一致性",
+          "phase": "P2",
+          "priority": 5,
+          "target_pool": "runnable_now",
+          "handler": "audit_readme_ops",
+          "boundary": "read_only_audit",
+          "done_when": "Inconsistencies documented",
+          "risk_level": "low"
+        },
+        {
+          "template_id": "repo-audit-entry-points",
+          "name": "audit_entry_point_consistency",
+          "title": "审计代码入口点与 package.json 一致性",
+          "phase": "P2",
+          "priority": 6,
+          "target_pool": "runnable_now",
+          "handler": "verify_entry_points",
+          "boundary": "read_only_audit",
+          "done_when": "Entry points verified",
+          "risk_level": "low"
+        }
       ]
     },
     "log_triage_tasks": {
-      "description": "Log triage tasks - PM2/app/systemd log anomaly detection",
+      "description": "Log triage tasks - PM2/app/systemd anomaly detection",
       "auto_generate": true,
-      "generation_frequency": "every_24_hours",
-      "examples": [
-        "verify_backup_script_execution",
-        "audit_pm2_logs_for_anomalies",
-        "verify_monitor_script_execution"
+      "generation_frequency_hours": 24,
+      "cooldown_hours": 12,
+      "templates": [
+        {
+          "template_id": "log-triage-pm2",
+          "name": "audit_pm2_logs_for_anomalies",
+          "title": "PM2 日志异常巡检",
+          "phase": "P2",
+          "priority": 4,
+          "target_pool": "runnable_now",
+          "handler": "audit_pm2_logs",
+          "boundary": "read_only_audit",
+          "done_when": "Log anomalies documented",
+          "risk_level": "low"
+        },
+        {
+          "template_id": "log-triage-api-health",
+          "name": "verify_api_health",
+          "title": "验证 API 健康状态",
+          "phase": "P2",
+          "priority": 3,
+          "target_pool": "runnable_now",
+          "handler": "verify_api_health",
+          "boundary": "read_only_verification",
+          "done_when": "Health endpoint checked",
+          "risk_level": "low"
+        }
       ]
     },
     "drift_sync_tasks": {
-      "description": "Drift sync tasks - state consistency between control plane components",
+      "description": "Drift sync tasks - control plane state consistency",
       "auto_generate": true,
-      "generation_frequency": "every_7_days",
-      "examples": [
-        "audit_control_plane_state_drift",
-        "audit_systemd_vs_control_metadata"
+      "generation_frequency_hours": 168,
+      "cooldown_hours": 72,
+      "templates": [
+        {
+          "template_id": "drift-state",
+          "name": "audit_control_plane_state_drift",
+          "title": "审计控制平面状态漂移",
+          "phase": "P2",
+          "priority": 5,
+          "target_pool": "runnable_now",
+          "handler": "audit_state_drift",
+          "boundary": "read_only_audit",
+          "done_when": "State drift documented",
+          "risk_level": "low"
+        },
+        {
+          "template_id": "drift-systemd",
+          "name": "audit_systemd_vs_control_metadata",
+          "title": "审计 systemd 与控制平面元数据一致性",
+          "phase": "P2",
+          "priority": 6,
+          "target_pool": "runnable_now",
+          "handler": "audit_systemd_drift",
+          "boundary": "read_only_audit",
+          "done_when": "systemd state documented",
+          "risk_level": "low"
+        }
       ]
     },
     "roadmap_tasks": {
-      "description": "Roadmap tasks - feature enhancements and content expansion",
+      "description": "Roadmap tasks - low-risk proposals",
       "auto_generate": true,
-      "generation_frequency": "on_demand",
-      "examples": [
-        "propose_status_page_structure",
-        "propose_about_page_structure",
-        "analyze_test_coverage_gaps"
+      "generation_frequency_hours": 336,
+      "cooldown_hours": 168,
+      "templates": [
+        {
+          "template_id": "roadmap-status-page",
+          "name": "propose_status_page_structure",
+          "title": "提议状态页面结构",
+          "phase": "P2",
+          "priority": 8,
+          "target_pool": "runnable_now",
+          "handler": "propose_status_page",
+          "boundary": "design_proposal_only",
+          "done_when": "Status page structure documented",
+          "risk_level": "low"
+        }
       ]
     }
   },
