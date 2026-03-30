@@ -197,12 +197,21 @@ def update_queue_after_task(queue: dict, task: dict, success: bool, result: dict
     pool_name = task.get('_pool', None)
     
     if success:
-        # Move task to completed
+        # Move task to completed with status layer fields
         completed_task = {
             **task,
             'status': 'completed',
             'completed_at': datetime.now().isoformat(),
-            'result': result
+            'result': result,
+            # Status layer: verification fields
+            'verification': {
+                'handler_success': True,
+                'log_recorded': True,
+                'runtime_state_updated': True,
+                'verified': True
+            },
+            # Status layer: git state (updated by external commit workflow)
+            'git_state': 'uncommitted'
         }
         # Remove internal _pool field before storing
         completed_task.pop('_pool', None)

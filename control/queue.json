@@ -2,12 +2,45 @@
   "_meta": {
     "description": "OpenClaw Control Plane - Task Queue v1.2",
     "version": "1.2.0",
-    "updated": "2026-03-30T23:20:41.787997",
-    "task_supply_system": "v1.2"
+    "updated": "2026-03-30T23:54:31.681902",
+    "task_supply_system": "v1.2",
+    "timer_verify_mode": true,
+    "timer_verify_note": "2 low-risk tasks injected for timer auto-trigger verification"
   },
   "current_phase": "P2_DATA_CONTENT",
   "task_pools": {
-    "runnable_now": [],
+    "runnable_now": [
+      {
+        "id": "timer-verify-001",
+        "name": "verify_api_health",
+        "title": "验证 API 健康状态",
+        "description": "检查 /api/health 端点返回 200，验证服务运行正常",
+        "source": "log_triage_tasks",
+        "phase": "P2",
+        "priority": 1,
+        "status": "pending",
+        "handler": "verify_api_health",
+        "boundary": "read_only_verification",
+        "done_when": "health endpoint returns 200, response time acceptable",
+        "auto_execute": true,
+        "risk_level": "low"
+      },
+      {
+        "id": "timer-verify-002",
+        "name": "verify_pm2_process",
+        "title": "验证 PM2 进程状态",
+        "description": "检查 PM2 进程 myapp 是否在线且无频繁重启",
+        "source": "log_triage_tasks",
+        "phase": "P2",
+        "priority": 2,
+        "status": "pending",
+        "handler": "verify_pm2_process",
+        "boundary": "read_only_verification",
+        "done_when": "PM2 process online, no restart loop",
+        "auto_execute": true,
+        "risk_level": "low"
+      }
+    ],
     "analyze_first": [],
     "waiting_user": [],
     "paused_by_policy": [
