@@ -29,7 +29,9 @@ from typing import Optional, Dict, Any, Tuple
 
 # Import summary generator
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from summary_generator import evaluate_and_generate
+from summary_generator import evaluate_and_generate, mark_event_read, get_compact_summary
+from pathlib import Path
+import subprocess
 
 # Configuration - Use resolve() for absolute path regardless of cwd
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -306,7 +308,69 @@ def update_runtime_state(runtime: dict, task: dict, success: bool) -> dict:
     return runtime
 
 
-def _write_status_bridge(queue: dict, runtime: dict, context_policy: dict = None) -> None:
+def _verify_git_truth() -> dict:
+    """
+    Verify current git truth level (L1-L4).
+    Returns completion_level and evidence.
+    """
+    BASE = CONTROL_DIR.parent
+    
+    result = {
+        'completion_level': 'L1',
+        'evidence': {}
+    }
+    
+    # Check git diff (L2)
+    try:
+        r = subprocess.Popen('git diff --name-only', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=BASE)
+        stdout, _ = r.communicate()
+        diff = stdout.decode('utf-8').strip()
+        if diff:
+            result['evidence']['file_diff'] = diff.split('\n')
+            result['completion_level'] = 'L2'
+    except:
+        pass
+    
+    # Check git log (L3)
+    try:
+        r = subprocess.Popen("git log -1 --format='%H %s'", shell=True, stdout=subprocess.PIPE, cwd=BASE)
+        stdout, _ = r.communicate()
+        log = stdout.decode('utf-8').strip()
+        if log:
+            result['evidence']['commit_hash'] = log.split()[0]
+            result['evidence']['commit_message'] = ' '.join(log.split()[1:])
+            result['completion_level'] = 'L3'
+    except:
+        pass
+    
+    # Check git push status (L4)
+    try:
+        r = subprocess.Popen("git log -1 --format='%H'", shell=True, stdout=subprocess.PIPE, cwd=BASE)
+        local_log = r.communicate()[0].decode('utf-8').strip()
+        r = subprocess.Popen("git log origin/main -1 --format='%H'", shell=True, stdout=subprocess.PIPE, cwd=BASE)
+        remote_log = r.communicate()[0].decode('utf-8').strip()
+        if local_log and remote_log and local_log == remote_log:
+            result['evidence']['push_confirmation'] = True
+            result['evidence']['remote_branch'] = 'origin/main'
+            result['completion_level'] = 'L4'
+    except:
+        pass
+    
+    return result
+
+
+def _level_label(level: str) -> str:
+    """Convert completion level to human-readable label."""
+    labels = {
+        'L1': 'analysis only',
+        'L2': 'local modified',
+        'L3': 'local committed',
+        'L4': 'remote truth'
+    }
+    return labels.get(level, level)
+
+
+def _write_status_bridge(queue: dict, runtime: dict, context_policy: dict = None, git_truth: dict = None) -> None:
     """
     Write control/status.md — single consumer-friendly status file.
     This is the push bridge: external systems (OpenClaw heartbeat) read this.
@@ -414,6 +478,10 @@ def _write_status_bridge(queue: dict, runtime: dict, context_policy: dict = None
         f"**Last Activity**: {last_activity}",
         f"**Last Summary**: {last_summary_reason}",
         f"**Next Action**: {next_task_name}",
+        f"**Last Event**: {summary_state.get('last_event', 'none')}",
+        f"**Last Event Time**: {summary_state.get('last_event_time', 'N/A')}",
+        f"**Unread Event**: {'yes' if summary_state.get('unread_event', False) else 'no'}",
+        f"**Completion Level**: {git_truth['completion_level'] if git_truth else 'N/A'} ({_level_label(git_truth['completion_level']) if git_truth else ''})",
         f"",
         f"## Recent",
         f"{recent_block}",
@@ -617,8 +685,12 @@ def main():
             if summary_path:
                 logger.info(f"Summary generated: {summary_path}")
             
+            # Verify git truth level
+            git_truth = _verify_git_truth()
+            runtime.setdefault('acceptance', {})['completion_level'] = git_truth['completion_level']
+            
             # Write status bridge on idle too
-            _write_status_bridge(queue, runtime, context_policy)
+            _write_status_bridge(queue, runtime, context_policy, git_truth)
             
             save_json(CONTROL_DIR / "runtime_state.json", runtime)
             logger.info(f"Updated runtime_state.json with last_run_at")
@@ -647,17 +719,23 @@ def main():
     runtime = update_runtime_state(runtime, task, success)
     runtime['last_run_at'] = datetime.now().isoformat()
     
+    # Verify git truth level after task completion
+    git_truth = _verify_git_truth()
+    runtime.setdefault('acceptance', {})['completion_level'] = git_truth['completion_level']
+    runtime.setdefault('acceptance', {})['last_verified'] = datetime.now().isoformat()
+    
     # Generate summary based on what happened
     summary_path = evaluate_and_generate(queue, runtime, **run_events)
     if summary_path:
         logger.info(f"Summary generated: {summary_path}")
+        logger.info(f"Completion level: {git_truth['completion_level']}")
     
     # Save updated files
     save_json(CONTROL_DIR / "queue.json", queue)
     save_json(CONTROL_DIR / "runtime_state.json", runtime)
     
     # Write status bridge: always-writeable status file for external consumption
-    _write_status_bridge(queue, runtime, context_policy)
+    _write_status_bridge(queue, runtime, context_policy, git_truth)
     
     logger.info(f"Task {task['id']} completed: {'SUCCESS' if success else 'FAILED'}")
     logger.info("=" * 60)
