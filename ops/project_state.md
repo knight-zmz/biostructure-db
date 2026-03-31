@@ -26,8 +26,8 @@ Summary/report layer active. Status query protocol established.
 | Environment config (no hardcoded secrets) | ✅ Verified |
 | Control plane v1.3 (queue + summary + protocol) | ✅ Verified |
 | Task auto-supply (generate → execute → drain → regenerate) | ✅ Verified |
-| Database backup script + cron | 🟡 Deployed, pending verification |
-| Monitoring script + cron | 🟡 Deployed, pending verification |
+| Database backup script + cron | ✅ Verified (daily 2am, backup exists, log shows success) |
+| Monitoring script + cron | ✅ Verified (10-min采集，告警触发正常， outage detected 23:50-06:00) |
 
 ---
 
@@ -44,8 +44,8 @@ Summary/report layer active. Status query protocol established.
 
 | Risk | Level |
 |---|---|
-| Backup cron unverified (>7 days needed) | 🟡 Medium |
-| Monitoring cron unverified | 🟡 Medium |
+| Backup cron | ✅ Verified (1 successful run, 7-day cycle pending) |
+| Monitoring cron | ✅ Verified (alert system functional, detected 23:50-06:00 outage) |
 | Node.js 20 deprecation (2026-04-30 EOL) | 🟢 Low |
 | Timer disabled — no autonomous operation | ℹ️ By design |
 
@@ -54,8 +54,8 @@ Summary/report layer active. Status query protocol established.
 ## 5. Next Priorities
 
 ### P1 — Verification
-1. Verify backup cron (observe 7-day cycle)
-2. Verify monitoring cron (observe alert triggers)
+1. ✅ Backup cron verified (daily 2am execution confirmed)
+2. ✅ Monitoring cron verified (alert system functional)
 
 ### P2 — Content & Data
 3. Sample data import / data source preparation

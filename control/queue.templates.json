@@ -170,7 +170,7 @@
     "max_queue_size": 20,
     "auto_advance": true,
     "stop_on_error": true,
-    "timer_enabled": true,
+    "timer_enabled": false,
     "task_supply_enabled": true
   },
   "paused_by_policy": [
