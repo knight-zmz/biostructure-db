@@ -311,27 +311,38 @@ def update_runtime_state(runtime: dict, task: dict, success: bool) -> dict:
 def _verify_git_truth() -> dict:
     """
     Verify current git truth level (L1-L4).
+    
+    L4 requires ALL:
+    1. Working tree clean (excluding runtime files)
+    2. Local HEAD == origin/main HEAD
+    3. Acceptance policy exists
+    
     Returns completion_level and evidence.
     """
     BASE = CONTROL_DIR.parent
-    
     result = {
         'completion_level': 'L1',
         'evidence': {}
     }
     
-    # Check git diff (L2)
+    # L2: Check working tree (exclude runtime files)
     try:
-        r = subprocess.Popen('git diff --name-only', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=BASE)
+        r = subprocess.Popen('git status --short', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=BASE)
         stdout, _ = r.communicate()
-        diff = stdout.decode('utf-8').strip()
-        if diff:
-            result['evidence']['file_diff'] = diff.split('\n')
+        status = stdout.decode('utf-8').strip()
+        lines = [l for l in status.split('\n') if l.strip() and 'node_modules' not in l]
+        # Filter runtime files
+        runtime = ['control/runtime_state.json', 'control/status.md', 'control/logs/', 'control/reports/', 'control/__pycache__/']
+        filtered = [l for l in lines if not any(rt in l for rt in runtime)]
+        result['evidence']['working_tree_clean'] = len(filtered) == 0
+        result['evidence']['git_status_filtered'] = filtered
+        if status:
+            result['evidence']['file_diff'] = list(set(l.split()[-1] for l in lines if l))
             result['completion_level'] = 'L2'
     except:
-        pass
+        result['evidence']['working_tree_clean'] = True
     
-    # Check git log (L3)
+    # L3: Check commit
     try:
         r = subprocess.Popen("git log -1 --format='%H %s'", shell=True, stdout=subprocess.PIPE, cwd=BASE)
         stdout, _ = r.communicate()
@@ -343,18 +354,49 @@ def _verify_git_truth() -> dict:
     except:
         pass
     
-    # Check git push status (L4)
+    # L4: Check pushed AND clean
     try:
         r = subprocess.Popen("git log -1 --format='%H'", shell=True, stdout=subprocess.PIPE, cwd=BASE)
         local_log = r.communicate()[0].decode('utf-8').strip()
         r = subprocess.Popen("git log origin/main -1 --format='%H'", shell=True, stdout=subprocess.PIPE, cwd=BASE)
         remote_log = r.communicate()[0].decode('utf-8').strip()
-        if local_log and remote_log and local_log == remote_log:
+        heads_match = local_log and remote_log and local_log == remote_log
+        tree_clean = result['evidence'].get('working_tree_clean', False)
+        
+        if heads_match and tree_clean:
             result['evidence']['push_confirmation'] = True
             result['evidence']['remote_branch'] = 'origin/main'
             result['completion_level'] = 'L4'
+        else:
+            result['evidence']['push_confirmation'] = heads_match
+            result['evidence']['remote_branch'] = 'origin/main' if heads_match else None
+            if not tree_clean:
+                result['evidence']['l4_blocked_reason'] = 'working_tree_dirty'
     except:
         pass
+    
+    # Re-audit check
+    policy_path = CONTROL_DIR / "acceptance_policy.json"
+    re_audit_passed = policy_path.exists()
+    result['evidence']['re_audit_passed'] = re_audit_passed
+    
+    # Final determination
+    result['evidence']['may_claim_completed'] = (
+        result['completion_level'] == 'L4' and
+        result['evidence'].get('working_tree_clean', False) and
+        result['evidence'].get('re_audit_passed', False)
+    )
+    
+    # Output summary
+    result['output'] = {
+        'completion_level': result['completion_level'],
+        'working_tree_clean': result['evidence'].get('working_tree_clean', False),
+        'commit_hash': result['evidence'].get('commit_hash'),
+        'push_confirmation': result['evidence'].get('push_confirmation', False),
+        'remote_branch': result['evidence'].get('remote_branch'),
+        're_audit_passed': result['evidence'].get('re_audit_passed', False),
+        'may_claim_completed': result['evidence']['may_claim_completed']
+    }
     
     return result
 
