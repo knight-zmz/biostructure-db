@@ -432,8 +432,8 @@ def _write_status_bridge(queue: dict, runtime: dict, context_policy: dict = None
     # Count queue state from the SAME queue snapshot
     task_pools = queue.get('task_pools', {})
     pending = sum(len([t for t in p if t.get('status') == 'pending']) for p in task_pools.values())
-    completed = len(queue.get('completed', []))
-    failed = len([t for t in queue.get('completed', []) if t.get('status') == 'failed'])
+    completed_count = len([t for t in queue.get('completed', []) if t.get('status') == 'completed'])
+    failed_count = len([t for t in queue.get('completed', []) if t.get('status') == 'failed'])
     
     # Find actual next runnable task (not from runtime_state, from live queue)
     next_task_name = 'none'
@@ -515,7 +515,7 @@ def _write_status_bridge(queue: dict, runtime: dict, context_policy: dict = None
         f"**Updated**: {now}",
         f"**Mode**: {mode_label}",
         f"**Phase**: {phase} ({phase_status})",
-        f"**Queue**: {pending} pending, {completed} completed, {failed} failed",
+        f"**Queue**: {pending} pending, {completed_count} completed, {failed_count} failed",
         f"**Idle**: {'yes (' + str(idle_cycles) + ' cycles)' if is_idle else 'no'}",
         f"**Last Activity**: {last_activity}",
         f"**Last Summary**: {last_summary_reason}",
@@ -523,6 +523,7 @@ def _write_status_bridge(queue: dict, runtime: dict, context_policy: dict = None
         f"**Last Event**: {summary_state.get('last_event', 'none')}",
         f"**Last Event Time**: {summary_state.get('last_event_time', 'N/A')}",
         f"**Unread Event**: {'yes' if summary_state.get('unread_event', False) else 'no'}",
+        f"**Last Task Outcome**: {runtime.get('acceptance', {}).get('last_task_outcome', 'N/A')}",
         f"**Completion Level**: {git_truth['completion_level'] if git_truth else 'N/A'} ({_level_label(git_truth['completion_level']) if git_truth else ''})",
         f"",
         f"## Recent",
@@ -730,6 +731,7 @@ def main():
             # Verify git truth level
             git_truth = _verify_git_truth()
             runtime.setdefault('acceptance', {})['completion_level'] = git_truth['completion_level']
+            runtime.setdefault('acceptance', {})['last_task_outcome'] = runtime.get('acceptance', {}).get('last_task_outcome', 'N/A')
             
             # Write status bridge on idle too
             _write_status_bridge(queue, runtime, context_policy, git_truth)
@@ -765,6 +767,7 @@ def main():
     git_truth = _verify_git_truth()
     runtime.setdefault('acceptance', {})['completion_level'] = git_truth['completion_level']
     runtime.setdefault('acceptance', {})['last_verified'] = datetime.now().isoformat()
+    runtime.setdefault('acceptance', {})['last_task_outcome'] = 'success' if success else 'failed'
     
     # Generate summary based on what happened
     summary_path = evaluate_and_generate(queue, runtime, **run_events)
