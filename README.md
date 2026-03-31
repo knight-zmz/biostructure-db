@@ -6,8 +6,8 @@
 [![Version](https://img.shields.io/github/v/release/knight-zmz/biostructure-db)](https://github.com/knight-zmz/biostructure-db/releases)
 [![License](https://img.shields.io/github/license/knight-zmz/biostructure-db)](LICENSE)
 
-**🌐 在线演示**: [https://jlupdb.me](https://jlupdb.me)  
-**📊 API**: [https://jlupdb.me/api/stats](https://jlupdb.me/api/stats)
+**🌐 在线演示**: http://101.200.53.98 (IP 直连，域名备案期间暂停)  
+**📊 API**: http://101.200.53.98/api/stats (IP 直连)
 
 ---
 
@@ -18,8 +18,8 @@
 - 🧬 **3D 可视化**: 3Dmol.js 交互式分子查看器
 - 📊 **实时统计**: 6 个结构，4,240 个原子 (P2 样例验证中)
 - 🚀 **RESTful API**: 12+ 生物信息学 API 端点
-- 💾 **PostgreSQL**: 18 个数据表
-- 🔄 **自动部署**: GitHub Actions + HTTPS 自动续期
+- 💾 **PostgreSQL**: 15 个核心数据表
+- 🔄 **自动部署**: GitHub Actions (HTTP 模式，备案完成后恢复 HTTPS)
 
 ### 🔥 新增功能
 - ✅ **Redis 缓存**: API 响应提升 10 倍
@@ -36,7 +36,7 @@
 | **蛋白质结构** | 6 (P2 样例) |
 | **原子坐标** | 4,240 (P2 样例) |
 | **实验方法** | 3 种 (X-Ray 93, NMR 12, EM 3) |
-| **数据表** | 18 |
+| **数据表** | 15 |
 | **API 端点** | 12+ |
 
 ---

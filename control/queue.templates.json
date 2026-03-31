@@ -131,6 +131,26 @@
           "risk_level": "low"
         }
       ]
+    },
+    "acceptance_tasks": {
+      "description": "Acceptance verification tasks - ensure L4 completion",
+      "auto_generate": true,
+      "generation_frequency_hours": 24,
+      "cooldown_hours": 12,
+      "templates": [
+        {
+          "template_id": "acceptance-verify-git-truth",
+          "name": "verify_git_truth",
+          "title": "验证 Git 真源状态 (L4)",
+          "phase": "P2",
+          "priority": 1,
+          "target_pool": "runnable_now",
+          "handler": "verify_git_truth",
+          "boundary": "acceptance_verification",
+          "done_when": "Completion level verified, evidence collected",
+          "risk_level": "low"
+        }
+      ]
     }
   },
   "execution_policy": {

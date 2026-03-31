@@ -1,0 +1,39 @@
+{
+  "version": "1.0.0",
+  "description": "Acceptance policy - defines completion levels and required evidence",
+  "levels": {
+    "L1": {
+      "name": "分析结论",
+      "description": "仅分析/建议，未修改任何文件",
+      "required_evidence": [],
+      "may_claim_completed": false
+    },
+    "L2": {
+      "name": "本地修改",
+      "description": "已修改本地文件，未 git add",
+      "required_evidence": ["file_diff"],
+      "may_claim_completed": false
+    },
+    "L3": {
+      "name": "本地提交",
+      "description": "已 git commit，未 push",
+      "required_evidence": ["file_diff", "commit_hash"],
+      "may_claim_completed": false
+    },
+    "L4": {
+      "name": "真源完成",
+      "description": "已 push 到远端主分支",
+      "required_evidence": ["file_diff", "commit_hash", "push_confirmation", "remote_branch"],
+      "may_claim_completed": true
+    }
+  },
+  "rules": {
+    "must_reaudit_after": "any_modification",
+    "L4_required_for": ["README.md", "ops/project_state.md", "control/queue.templates.json", "handlers/*.py"],
+    "report_must_include": ["completion_level", "evidence_summary"]
+  },
+  "verification": {
+    "handler": "verify_git_truth",
+    "checks": ["git_diff", "git_status", "git_log", "git_push_status"]
+  }
+}
