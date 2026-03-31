@@ -186,6 +186,16 @@ def generate_summary(
     
     # Check suppression
     if _should_suppress(reason, summary_state):
+        # Full summary suppressed, but generate lightweight event if:
+        # 1. This is a task execution cycle (not idle/daily)
+        # 2. There's a task outcome (success/failed)
+        # 3. There's an unread event
+        if (
+            reason not in ('idle_cycles_exceeded', 'daily_digest') and
+            runtime.get('acceptance', {}).get('last_task_outcome') in ('success', 'failed') and
+            summary_state.get('unread_event', False)
+        ):
+            return _generate_lightweight_event(reason, queue, runtime)
         return None
     
     now = datetime.now()
@@ -307,6 +317,67 @@ def generate_summary(
     runtime.setdefault('_meta', {})['updated'] = timestamp
     
     return str(LATEST_SUMMARY)
+
+
+def _generate_lightweight_event(
+    reason: str,
+    queue: dict,
+    runtime: dict
+) -> Optional[str]:
+    """
+    Generate a lightweight event update when full summary is suppressed by cooldown.
+    
+    This provides visibility for task execution without breaking the 30m cooldown.
+    Output is written to control/reports/latest_event.md (overwrite, no history).
+    
+    Returns:
+        Path to generated event file, or None if conditions not met.
+    """
+    REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+    
+    now = datetime.now()
+    timestamp = now.isoformat()
+    
+    # Extract minimal event data
+    last_activity = runtime.get('current_state', {}).get('last_activity', 'N/A')
+    last_activity_type = runtime.get('current_state', {}).get('last_activity_type', 'N/A')
+    
+    # Extract task name from last_activity_type (e.g., "verify_api_health.completed")
+    task_name = last_activity_type.replace('.completed', '').replace('.failed', '') if last_activity_type else 'unknown'
+    
+    outcome = runtime.get('acceptance', {}).get('last_task_outcome', 'unknown')
+    completion_level = runtime.get('acceptance', {}).get('completion_level', 'N/A')
+    
+    # Determine if user attention is needed
+    attention_needed = (
+        outcome == 'failed' or
+        runtime.get('current_state', {}).get('phase') == 'P3_MAINTENANCE'
+    )
+    
+    # Build lightweight markdown
+    lines = [
+        "## Event Update",
+        "",
+        f"**Trigger**: {last_activity}",
+        f"**Task**: {task_name}",
+        f"**Outcome**: {outcome}",
+        f"**Completion Level**: {completion_level}",
+        f"**Attention Needed**: {'Yes' if attention_needed else 'No'}",
+        "",
+        "---",
+        "*Lightweight event (full summary on cooldown)*",
+    ]
+    
+    content = '\n'.join(lines)
+    
+    # Write to latest_event.md (overwrite)
+    event_path = REPORTS_DIR / "latest_event.md"
+    try:
+        with open(event_path, 'w', encoding='utf-8') as f:
+            f.write(content)
+        return str(event_path)
+    except Exception:
+        return None
 
 
 def mark_event_read(runtime: dict) -> bool:

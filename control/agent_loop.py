@@ -523,6 +523,7 @@ def _write_status_bridge(queue: dict, runtime: dict, context_policy: dict = None
         f"**Last Event**: {summary_state.get('last_event', 'none')}",
         f"**Last Event Time**: {summary_state.get('last_event_time', 'N/A')}",
         f"**Unread Event**: {'yes' if summary_state.get('unread_event', False) else 'no'}",
+        f"**Event Update**: {'available (control/reports/latest_event.md)' if (CONTROL_DIR / 'reports' / 'latest_event.md').exists() and summary_state.get('unread_event', False) else 'none'}",
         f"**Last Task Outcome**: {runtime.get('acceptance', {}).get('last_task_outcome', 'N/A')}",
         f"**Completion Level**: {git_truth['completion_level'] if git_truth else 'N/A'} ({_level_label(git_truth['completion_level']) if git_truth else ''})",
         f"",
@@ -763,11 +764,13 @@ def main():
     runtime = update_runtime_state(runtime, task, success)
     runtime['last_run_at'] = datetime.now().isoformat()
     
+    # Set task outcome BEFORE summary generation (needed for lightweight event)
+    runtime.setdefault('acceptance', {})['last_task_outcome'] = 'success' if success else 'failed'
+    
     # Verify git truth level after task completion
     git_truth = _verify_git_truth()
     runtime.setdefault('acceptance', {})['completion_level'] = git_truth['completion_level']
     runtime.setdefault('acceptance', {})['last_verified'] = datetime.now().isoformat()
-    runtime.setdefault('acceptance', {})['last_task_outcome'] = 'success' if success else 'failed'
     
     # Generate summary based on what happened
     summary_path = evaluate_and_generate(queue, runtime, **run_events)
