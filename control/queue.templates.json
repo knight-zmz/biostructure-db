@@ -133,6 +133,18 @@
           "boundary": "read_only_verification",
           "done_when": "All control plane JSON files valid",
           "risk_level": "low"
+        },
+        {
+          "template_id": "drift-bridge-consistency",
+          "name": "verify_bridge_consistency",
+          "title": "验证 Bridge 一致性 (queue/status/summary)",
+          "phase": "P2",
+          "priority": 8,
+          "target_pool": "runnable_now",
+          "handler": "verify_bridge_consistency",
+          "boundary": "read_only_verification",
+          "done_when": "Bridge consistency verified or drift documented",
+          "risk_level": "low"
         }
       ]
     },
