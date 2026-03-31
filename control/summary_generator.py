@@ -219,9 +219,18 @@ def generate_summary(
     
     idle_cycles = summary_state.get('idle_cycles', 0)
     
-    # Next action
-    next_action = runtime.get('next_default_action', {})
-    next_desc = next_action.get('description', 'No pending action')
+    # Next action: compute from queue directly (same as get_compact_summary)
+    task_pools = queue.get('task_pools', {})
+    next_action_name = 'No pending tasks in queue'
+    for pool_name in ['runnable_now', 'analyze_first']:
+        pool = task_pools.get(pool_name, [])
+        pending_in_pool = [t for t in pool if t.get('status') == 'pending']
+        if pending_in_pool:
+            pending_in_pool.sort(key=lambda x: x.get('priority', 999))
+            t = pending_in_pool[0]
+            next_action_name = t.get('title') or t.get('name', t.get('id', '?'))
+            break
+    next_desc = next_action_name
     
     # Reason labels
     reason_labels = {
