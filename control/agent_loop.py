@@ -27,6 +27,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional, Dict, Any, Tuple
 
+# Import summary generator
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from summary_generator import evaluate_and_generate
+
 # Configuration - Use resolve() for absolute path regardless of cwd
 BASE_DIR = Path(__file__).resolve().parent.parent
 CONTROL_DIR = BASE_DIR / "control"
@@ -46,6 +50,23 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger(__name__)
+
+
+def parse_iso(ts: str) -> Optional[datetime]:
+    """Parse ISO timestamp string, compatible with Python 3.6."""
+    if not ts:
+        return None
+    try:
+        # Handle both with and without microseconds
+        if '.' in ts:
+            # Strip timezone suffix if present
+            clean = ts.split('+')[0].split('Z')[0]
+            return datetime.strptime(clean, '%Y-%m-%dT%H:%M:%S.%f')
+        else:
+            clean = ts.split('+')[0].split('Z')[0]
+            return datetime.strptime(clean, '%Y-%m-%dT%H:%M:%S')
+    except (ValueError, TypeError):
+        return None
 
 
 def load_json(filepath: Path) -> dict:
@@ -285,6 +306,130 @@ def update_runtime_state(runtime: dict, task: dict, success: bool) -> dict:
     return runtime
 
 
+def _write_status_bridge(queue: dict, runtime: dict) -> None:
+    """
+    Write control/status.md — single consumer-friendly status file.
+    This is the push bridge: external systems (OpenClaw heartbeat) read this.
+    
+    Format: Status Query Protocol v1.
+    
+    All fields computed from the SAME snapshot to avoid contradictions.
+    """
+    import subprocess as _sub
+    
+    now_dt = datetime.now()
+    phase = runtime.get('current_state', {}).get('phase', 'unknown')
+    phase_status = runtime.get('current_state', {}).get('phase_status', 'unknown')
+    last_activity = runtime.get('current_state', {}).get('last_activity_type', 'N/A')
+    last_time = runtime.get('current_state', {}).get('last_activity', 'N/A')
+    
+    # Count queue state from the SAME queue snapshot
+    task_pools = queue.get('task_pools', {})
+    pending = sum(len([t for t in p if t.get('status') == 'pending']) for p in task_pools.values())
+    completed = len(queue.get('completed', []))
+    failed = len([t for t in queue.get('completed', []) if t.get('status') == 'failed'])
+    
+    # Find actual next runnable task (not from runtime_state, from live queue)
+    next_task_name = 'none'
+    for pool_name in ['runnable_now', 'analyze_first', 'waiting_user']:
+        pool = task_pools.get(pool_name, [])
+        pending_in_pool = [t for t in pool if t.get('status') == 'pending']
+        if pending_in_pool:
+            pending_in_pool.sort(key=lambda x: x.get('priority', 999))
+            t = pending_in_pool[0]
+            next_task_name = t.get('title') or t.get('name', t.get('id', '?'))
+            break
+    
+    summary_state = runtime.get('summary', {})
+    last_summary_reason = summary_state.get('last_summary_reason', 'none')
+    idle_cycles = summary_state.get('idle_cycles', 0)
+    is_idle = pending == 0
+    
+    # Detect execution mode: autonomous (timer) vs manual vs fully idle
+    last_run_str = runtime.get('last_run_at') or runtime.get('current_state', {}).get('last_activity', '')
+    execution_mode = 'fully_idle'
+    if last_run_str:
+        try:
+            clean = last_run_str.split('+')[0].split('Z')[0]
+            if '.' in clean:
+                last_run_dt = datetime.strptime(clean, '%Y-%m-%dT%H:%M:%S.%f')
+            else:
+                last_run_dt = datetime.strptime(clean, '%Y-%m-%dT%H:%M:%S')
+            minutes_since = (now_dt - last_run_dt).total_seconds() / 60
+            
+            # Check if any timer is active
+            timer_active = False
+            try:
+                r = _sub.run(['systemctl', 'is-active', 'openclaw-agent.timer'], 
+                           capture_output=True, text=True, timeout=3)
+                if r.stdout.strip() == 'active':
+                    timer_active = True
+                r2 = _sub.run(['systemctl', 'is-active', 'openclaw-agent-test.timer'],
+                            capture_output=True, text=True, timeout=3)
+                if r2.stdout.strip() == 'active':
+                    timer_active = True
+            except Exception:
+                pass
+            
+            if timer_active:
+                execution_mode = 'autonomous_active'
+            elif minutes_since < 60:
+                execution_mode = 'manually_active_recently'
+            elif minutes_since < 360:
+                execution_mode = 'manually_active_hours_ago'
+            else:
+                execution_mode = 'fully_idle'
+        except (ValueError, TypeError):
+            pass
+    
+    # Recent completed (last 3)
+    recent = queue.get('completed', [])[-3:]
+    recent_lines = []
+    for t in reversed(recent):
+        name = t.get('title') or t.get('name', t.get('id', '?'))
+        status = t.get('status', '?')
+        marker = '✅' if status == 'completed' else '❌'
+        recent_lines.append(f"  {marker} {name}")
+    recent_block = '\n'.join(recent_lines) if recent_lines else '  (none)'
+    
+    now = now_dt.strftime('%Y-%m-%d %H:%M')
+    
+    # Mode label
+    mode_labels = {
+        'autonomous_active': 'timer running',
+        'manually_active_recently': f'manual trigger ({last_activity})',
+        'manually_active_hours_ago': f'manual trigger hours ago',
+        'fully_idle': 'idle (no timer, no recent manual run)',
+    }
+    mode_label = mode_labels.get(execution_mode, execution_mode)
+    
+    lines = [
+        f"# Control Plane Status",
+        f"",
+        f"**Updated**: {now}",
+        f"**Mode**: {mode_label}",
+        f"**Phase**: {phase} ({phase_status})",
+        f"**Queue**: {pending} pending, {completed} completed, {failed} failed",
+        f"**Idle**: {'yes (' + str(idle_cycles) + ' cycles)' if is_idle else 'no'}",
+        f"**Last Activity**: {last_activity}",
+        f"**Last Summary**: {last_summary_reason}",
+        f"**Next Action**: {next_task_name}",
+        f"",
+        f"## Recent",
+        f"{recent_block}",
+        f"",
+        f"---",
+        f"*Protocol: Status Query Protocol v1 | See latest_summary.md for full report.*",
+    ]
+    
+    status_path = CONTROL_DIR / "status.md"
+    try:
+        with open(status_path, 'w', encoding='utf-8') as f:
+            f.write('\n'.join(lines))
+    except Exception:
+        pass
+
+
 def generate_tasks_if_needed(queue: dict) -> dict:
     """
     Minimal task auto-supply: generate tasks from templates when queue is empty.
@@ -319,7 +464,7 @@ def generate_tasks_if_needed(queue: dict) -> dict:
         last_gen_str = generation_log.get(source_name)
         if last_gen_str:
             try:
-                last_gen = datetime.fromisoformat(last_gen_str)
+                last_gen = parse_iso(last_gen_str)
                 hours_since = (now - last_gen).total_seconds() / 3600
                 if hours_since < cooldown_hours:
                     continue  # Still in cooldown
@@ -344,7 +489,7 @@ def generate_tasks_if_needed(queue: dict) -> dict:
                     if ct['id'] == task_id:
                         completed_at = ct.get('completed_at', '')
                         try:
-                            cat = datetime.fromisoformat(completed_at)
+                            cat = parse_iso(completed_at)
                             hours_since = (now - cat).total_seconds() / 3600
                             if hours_since < cooldown_hours * 2:
                                 continue  # Skip, recently completed
@@ -407,6 +552,14 @@ def main():
         logger.error("Failed to load control files. Exiting.")
         sys.exit(1)
     
+    # Track run-level events for summary
+    run_events = {
+        'just_completed': None,
+        'just_failed': None,
+        'tasks_generated': 0,
+        'is_idle': False
+    }
+    
     logger.info(f"Current phase: {runtime.get('current_state', {}).get('phase', 'unknown')}")
     logger.info(f"Queue size: {len(queue.get('queue', []))} pending tasks")
     
@@ -419,16 +572,27 @@ def main():
         queue, generated = generate_tasks_if_needed(queue)
         if generated > 0:
             logger.info(f"Auto-supplied {generated} tasks from templates")
+            run_events['tasks_generated'] = generated
             save_json(CONTROL_DIR / "queue.json", queue)
             # Re-attempt to get a task
             task = get_next_task(queue, runtime, policy)
         
         if not task:
             logger.info("Still no runnable task after auto-supply")
+            run_events['is_idle'] = True
             runtime.setdefault('current_state', {})['last_activity'] = datetime.now().isoformat()
             runtime.setdefault('current_state', {})['last_activity_type'] = 'agent_loop.no_task'
             runtime['last_run_at'] = datetime.now().isoformat()
             runtime.setdefault('_meta', {})['updated'] = datetime.now().isoformat()
+            
+            # Generate summary for idle state
+            summary_path = evaluate_and_generate(queue, runtime, **run_events)
+            if summary_path:
+                logger.info(f"Summary generated: {summary_path}")
+            
+            # Write status bridge on idle too
+            _write_status_bridge(queue, runtime)
+            
             save_json(CONTROL_DIR / "runtime_state.json", runtime)
             logger.info(f"Updated runtime_state.json with last_run_at")
             sys.exit(0)
@@ -444,13 +608,28 @@ def main():
     # Execute handler
     success, result = execute_handler(task, policy)
     
+    # Track outcome for summary
+    if success:
+        run_events['just_completed'] = task
+    else:
+        run_events['just_failed'] = task
+    
     # Update control files
     queue = update_queue_after_task(queue, task, success, result)
     runtime = update_runtime_state(runtime, task, success)
+    runtime['last_run_at'] = datetime.now().isoformat()
+    
+    # Generate summary based on what happened
+    summary_path = evaluate_and_generate(queue, runtime, **run_events)
+    if summary_path:
+        logger.info(f"Summary generated: {summary_path}")
     
     # Save updated files
     save_json(CONTROL_DIR / "queue.json", queue)
     save_json(CONTROL_DIR / "runtime_state.json", runtime)
+    
+    # Write status bridge: always-writeable status file for external consumption
+    _write_status_bridge(queue, runtime)
     
     logger.info(f"Task {task['id']} completed: {'SUCCESS' if success else 'FAILED'}")
     logger.info("=" * 60)

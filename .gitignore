@@ -1,10 +1,11 @@
+# Runtime state (regenerated each loop)
+control/runtime_state.json
+control/logs/
+control/__pycache__/
+*.pyc
 
-# 自动忽略
-node_modules/
-coverage/
-*.log
-hourly_reports.log
-AUTO_IMPROVE_LOG.md
+# Auto-generated reports (rebuildable from queue)
+control/reports/
 
-# 环境变量配置
-.env
+# Audit run artifacts (regenerated each audit)
+control/audits/*.json
