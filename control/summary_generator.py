@@ -76,10 +76,16 @@ def _get_summary_state(runtime: dict) -> dict:
             'idle_cycles': 0,
             'reports_generated': 0,
             'daily_digest_last_date': None,
-            'completed_since_last_summary': 0
+            'completed_since_last_summary': 0,
+            'last_event': None,
+            'last_event_time': None,
+            'unread_event': False
         }
     ss = runtime['summary']
     ss.setdefault('completed_since_last_summary', 0)
+    ss.setdefault('last_event', None)
+    ss.setdefault('last_event_time', None)
+    ss.setdefault('unread_event', False)
     return ss
 
 
@@ -290,10 +296,89 @@ def generate_summary(
     if reason == 'daily_digest':
         summary_state['daily_digest_last_date'] = date_str
     
+    # Track unread events (only for key events, not idle/daily)
+    unread_events = {'task_failed', 'queue_drained', 'supply_summary', 'batch_summary'}
+    if reason in unread_events:
+        summary_state['last_event'] = reason
+        summary_state['last_event_time'] = timestamp
+        summary_state['unread_event'] = True
+    
     runtime['summary'] = summary_state
     runtime.setdefault('_meta', {})['updated'] = timestamp
     
     return str(LATEST_SUMMARY)
+
+
+def mark_event_read(runtime: dict) -> bool:
+    """
+    Mark the current unread event as read.
+    Call this when the user has been shown the compact summary.
+    Returns True if there was an unread event.
+    """
+    summary_state = _get_summary_state(runtime)
+    had_unread = summary_state.get('unread_event', False)
+    summary_state['unread_event'] = False
+    runtime['summary'] = summary_state
+    return had_unread
+
+
+def get_compact_summary(runtime: dict, queue: dict) -> Optional[str]:
+    """
+    Generate a 5-line compact summary for user-facing output.
+    Only returns content if there's an unread event.
+    Returns None if no unread event.
+    """
+    summary_state = _get_summary_state(runtime)
+    if not summary_state.get('unread_event', False):
+        return None
+    
+    last_event = summary_state.get('last_event', 'unknown')
+    last_time = summary_state.get('last_event_time', 'N/A')
+    # Shorten timestamp
+    if 'T' in str(last_time):
+        last_time = last_time.split('T')[1][:5]  # HH:MM
+    
+    # Queue summary
+    task_pools = queue.get('task_pools', {})
+    pending = sum(len([t for t in p if t.get('status') == 'pending']) for p in task_pools.values())
+    completed = len(queue.get('completed', []))
+    failed = len([t for t in queue.get('completed', []) if t.get('status') == 'failed'])
+    
+    # Event description
+    event_labels = {
+        'task_failed': '❌ Task Failed',
+        'queue_drained': '✅ Queue Drained',
+        'supply_summary': '🔄 New Tasks Generated',
+        'batch_summary': '📋 Batch Complete (3 tasks)'
+    }
+    event_label = event_labels.get(last_event, last_event)
+    
+    # Next action
+    next_action = 'none'
+    for pool_name in ['runnable_now', 'analyze_first']:
+        pool = task_pools.get(pool_name, [])
+        pending_in_pool = [t for t in pool if t.get('status') == 'pending']
+        if pending_in_pool:
+            pending_in_pool.sort(key=lambda x: x.get('priority', 999))
+            t = pending_in_pool[0]
+            next_action = t.get('title') or t.get('name', t.get('id', '?'))
+            break
+    
+    lines = [
+        f"**Event**: {event_label} at {last_time}",
+        f"**Queue**: {pending} pending, {completed} done, {failed} failed",
+        f"**Next**: {next_action}",
+    ]
+    
+    # Add failure detail if applicable
+    if last_event == 'task_failed':
+        recent_failed = [t for t in queue.get('completed', []) if t.get('status') == 'failed']
+        if recent_failed:
+            last_fail = recent_failed[-1]
+            error = last_fail.get('result', {}).get('error', 'unknown')
+            lines.insert(1, f"**Failed**: {last_fail.get('name', '?')} — {error}")
+    
+    return '\n'.join(lines)
 
 
 def evaluate_and_generate(
