@@ -1,3 +1,6 @@
+# Secrets
+.env
+
 # Runtime state (regenerated each loop)
 control/runtime_state.json
 control/logs/
@@ -9,3 +12,6 @@ control/reports/
 
 # Audit run artifacts (regenerated each audit)
 control/audits/*.json
+
+# Dependencies
+node_modules/
