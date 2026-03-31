@@ -448,8 +448,20 @@ def _write_status_bridge(queue: dict, runtime: dict, context_policy: dict = None
     
     summary_state = runtime.get('summary', {})
     last_summary_reason = summary_state.get('last_summary_reason', 'none')
+    last_event = summary_state.get('last_event', 'none')
     idle_cycles = summary_state.get('idle_cycles', 0)
     is_idle = pending == 0
+    
+    # Event label mapping for user-friendly display
+    event_labels = {
+        'batch_summary': '批次总结',
+        'queue_drained': '队列已清空',
+        'supply_summary': '新任务已生成',
+        'task_failed': '任务失败',
+        'idle_cycles_exceeded': '空闲周期过长',
+        'daily_digest': '每日摘要',
+    }
+    last_event_label = event_labels.get(last_event, last_event)
     
     # Detect execution mode: autonomous (timer) vs manual vs fully idle
     last_run_str = runtime.get('last_run_at') or runtime.get('current_state', {}).get('last_activity', '')
@@ -520,7 +532,7 @@ def _write_status_bridge(queue: dict, runtime: dict, context_policy: dict = None
         f"**Last Activity**: {last_activity}",
         f"**Last Summary**: {last_summary_reason}",
         f"**Next Action**: {next_task_name}",
-        f"**Last Event**: {summary_state.get('last_event', 'none')}",
+        f"**Last Event**: {last_event_label}",
         f"**Last Event Time**: {summary_state.get('last_event_time', 'N/A')}",
         f"**Unread Event**: {'yes' if summary_state.get('unread_event', False) else 'no'}",
         f"**Event Update**: {'available (control/reports/latest_event.md)' if (CONTROL_DIR / 'reports' / 'latest_event.md').exists() and summary_state.get('unread_event', False) else 'none'}",
