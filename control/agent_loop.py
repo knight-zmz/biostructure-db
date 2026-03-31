@@ -306,7 +306,7 @@ def update_runtime_state(runtime: dict, task: dict, success: bool) -> dict:
     return runtime
 
 
-def _write_status_bridge(queue: dict, runtime: dict) -> None:
+def _write_status_bridge(queue: dict, runtime: dict, context_policy: dict = None) -> None:
     """
     Write control/status.md — single consumer-friendly status file.
     This is the push bridge: external systems (OpenClaw heartbeat) read this.
@@ -417,10 +417,22 @@ def _write_status_bridge(queue: dict, runtime: dict) -> None:
         f"",
         f"## Recent",
         f"{recent_block}",
-        f"",
-        f"---",
-        f"*Protocol: Status Query Protocol v1 | See latest_summary.md for full report.*",
     ]
+    
+    # Embed context policy rules (so consumers know what to read)
+    if context_policy:
+        lines.append(f"")
+        lines.append(f"## Read Policy")
+        default = context_policy.get('default_read', [])
+        lines.append(f"default: {', '.join(default)}")
+        for key, rule in context_policy.get('conditional_read', {}).items():
+            trigger_sample = ', '.join(rule.get('trigger', [])[:3])
+            reads = ', '.join(rule.get('read', []))
+            lines.append(f"- {key}: [{trigger_sample}...] → {reads}")
+    
+    lines.append(f"")
+    lines.append(f"---")
+    lines.append(f"*Protocol: Status Query Protocol v1 | See latest_summary.md for full report.*")
     
     status_path = CONTROL_DIR / "status.md"
     try:
@@ -430,16 +442,17 @@ def _write_status_bridge(queue: dict, runtime: dict) -> None:
         pass
 
 
-def generate_tasks_if_needed(queue: dict) -> dict:
+def generate_tasks_if_needed(queue: dict, task_sources: dict) -> dict:
     """
     Minimal task auto-supply: generate tasks from templates when queue is empty.
     
+    task_sources comes from queue.templates.json (static config), not queue.json.
     Deduplication: per-source cooldown window via _meta.generation_log.
     Only generates low-risk tasks (read-only audits, log checks, proposals).
     """
     task_pools = queue.get('task_pools', {})
     runnable_now = task_pools.get('runnable_now', [])
-    sources = queue.get('task_sources', {})
+    sources = task_sources
     meta = queue.get('_meta', {})
     
     # Initialize generation log if not present
@@ -544,13 +557,27 @@ def main():
     
     # Load control files
     queue = load_json(CONTROL_DIR / "queue.json")
+    templates = load_json(CONTROL_DIR / "queue.templates.json")
     paused = load_json(CONTROL_DIR / "paused.json")
     runtime = load_json(CONTROL_DIR / "runtime_state.json")
     policy = load_json(CONTROL_DIR / "phase_policy.json")
+    context_policy = load_json(CONTROL_DIR / "context_policy.json")
     
     if not queue or not runtime or not policy:
         logger.error("Failed to load control files. Exiting.")
         sys.exit(1)
+    
+    if not templates:
+        logger.error("queue.templates.json missing or corrupt. Cannot proceed.")
+        sys.exit(1)
+    
+    # Build template context for runtime use
+    template_ctx = {
+        'task_sources': templates.get('task_sources', {}),
+        'execution_policy': templates.get('execution_policy', {}),
+        'config': templates.get('config', {}),
+        'paused_by_policy': templates.get('paused_by_policy', [])
+    }
     
     # Track run-level events for summary
     run_events = {
@@ -569,7 +596,7 @@ def main():
     if not task:
         logger.info("No runnable task - queue is empty or all tasks blocked")
         # Try to auto-supply tasks from templates
-        queue, generated = generate_tasks_if_needed(queue)
+        queue, generated = generate_tasks_if_needed(queue, template_ctx["task_sources"])
         if generated > 0:
             logger.info(f"Auto-supplied {generated} tasks from templates")
             run_events['tasks_generated'] = generated
@@ -591,7 +618,7 @@ def main():
                 logger.info(f"Summary generated: {summary_path}")
             
             # Write status bridge on idle too
-            _write_status_bridge(queue, runtime)
+            _write_status_bridge(queue, runtime, context_policy)
             
             save_json(CONTROL_DIR / "runtime_state.json", runtime)
             logger.info(f"Updated runtime_state.json with last_run_at")
@@ -601,6 +628,7 @@ def main():
     
     # Check if task conflicts with paused items
     paused_ids = [p['id'] for p in paused.get('paused_tasks', [])]
+    paused_ids += [p['id'] for p in template_ctx.get('paused_by_policy', [])]
     if task['id'] in paused_ids:
         logger.warning(f"Task {task['id']} is paused. Skipping.")
         sys.exit(0)
@@ -629,7 +657,7 @@ def main():
     save_json(CONTROL_DIR / "runtime_state.json", runtime)
     
     # Write status bridge: always-writeable status file for external consumption
-    _write_status_bridge(queue, runtime)
+    _write_status_bridge(queue, runtime, context_policy)
     
     logger.info(f"Task {task['id']} completed: {'SUCCESS' if success else 'FAILED'}")
     logger.info("=" * 60)

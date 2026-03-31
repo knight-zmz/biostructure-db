@@ -1,0 +1,89 @@
+{
+  "version": "1.0.0",
+  "default_read": [
+    "control/status.md"
+  ],
+  "conditional_read": {
+    "status_query": {
+      "trigger": [
+        "当前状态",
+        "status",
+        "队列",
+        "最近做了什么",
+        "卡在哪"
+      ],
+      "read": [
+        "control/status.md",
+        "control/runtime_state.json",
+        "control/queue.json"
+      ]
+    },
+    "detailed_summary": {
+      "trigger": [
+        "详细总结",
+        "summary",
+        "最近失败",
+        "最近完成"
+      ],
+      "read": [
+        "control/status.md",
+        "control/reports/latest_summary.md"
+      ]
+    },
+    "handler_debug": {
+      "trigger": [
+        "handler",
+        "处理器",
+        "脚本错误",
+        "排障"
+      ],
+      "read": [
+        "control/status.md",
+        "control/logs/agent-loop.log"
+      ]
+    },
+    "schema_reference": {
+      "trigger": [
+        "schema",
+        "字段",
+        "结构",
+        "queue结构",
+        "runtime结构"
+      ],
+      "read": [
+        "control/README.md"
+      ]
+    },
+    "deploy_ops": {
+      "trigger": [
+        "部署",
+        "deploy",
+        "启动",
+        "重启",
+        "回滚",
+        "备份"
+      ],
+      "read": [
+        "ops/runbook.md"
+      ]
+    },
+    "project_overview": {
+      "trigger": [
+        "项目状态",
+        "阶段",
+        "阻塞",
+        "风险",
+        "优先级"
+      ],
+      "read": [
+        "ops/project_state.md"
+      ]
+    }
+  },
+  "never_default": [
+    "control/logs/agent-loop.log",
+    "control/reports/summary_*.md",
+    "control/audits/*.json",
+    "ops/*.md"
+  ]
+}

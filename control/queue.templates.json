@@ -1,0 +1,196 @@
+{
+  "_meta": {
+    "description": "Task templates and execution policy — static config",
+    "version": "1.3.0"
+  },
+  "task_sources": {
+    "repo_audit_tasks": {
+      "description": "Repository audit tasks - code/docs/schema consistency",
+      "auto_generate": true,
+      "generation_frequency_hours": 168,
+      "cooldown_hours": 2,
+      "templates": [
+        {
+          "template_id": "repo-audit-readme-ops",
+          "name": "audit_readme_ops_consistency",
+          "title": "审计 README 与 ops 文档一致性",
+          "phase": "P2",
+          "priority": 5,
+          "target_pool": "runnable_now",
+          "handler": "audit_readme_ops",
+          "boundary": "read_only_audit",
+          "done_when": "Inconsistencies documented",
+          "risk_level": "low"
+        }
+      ]
+    },
+    "log_triage_tasks": {
+      "description": "Log triage tasks - PM2/app/systemd anomaly detection",
+      "auto_generate": true,
+      "generation_frequency_hours": 24,
+      "cooldown_hours": 1,
+      "templates": [
+        {
+          "template_id": "log-triage-pm2",
+          "name": "audit_pm2_logs_for_anomalies",
+          "title": "PM2 日志异常巡检",
+          "phase": "P2",
+          "priority": 4,
+          "target_pool": "runnable_now",
+          "handler": "audit_pm2_logs",
+          "boundary": "read_only_audit",
+          "done_when": "Log anomalies documented",
+          "risk_level": "low"
+        },
+        {
+          "template_id": "log-triage-api-health",
+          "name": "verify_api_health",
+          "title": "验证 API 健康状态",
+          "phase": "P2",
+          "priority": 3,
+          "target_pool": "runnable_now",
+          "handler": "verify_api_health",
+          "boundary": "read_only_verification",
+          "done_when": "Health endpoint checked",
+          "risk_level": "low"
+        },
+        {
+          "template_id": "log-triage-pm2-health",
+          "name": "verify_pm2_process_health",
+          "title": "验证 PM2 进程健康状态",
+          "phase": "P2",
+          "priority": 2,
+          "target_pool": "runnable_now",
+          "handler": "verify_pm2_process",
+          "boundary": "read_only_verification",
+          "done_when": "PM2 process online, no crash loops",
+          "risk_level": "low"
+        }
+      ]
+    },
+    "drift_sync_tasks": {
+      "description": "Drift sync tasks - control plane state consistency",
+      "auto_generate": true,
+      "generation_frequency_hours": 168,
+      "cooldown_hours": 2,
+      "templates": [
+        {
+          "template_id": "drift-state",
+          "name": "audit_control_plane_state_drift",
+          "title": "审计控制平面状态漂移",
+          "phase": "P2",
+          "priority": 5,
+          "target_pool": "runnable_now",
+          "handler": "audit_state_drift",
+          "boundary": "read_only_audit",
+          "done_when": "State drift documented",
+          "risk_level": "low"
+        },
+        {
+          "template_id": "drift-systemd",
+          "name": "audit_systemd_vs_control_metadata",
+          "title": "审计 systemd 与控制平面元数据一致性",
+          "phase": "P2",
+          "priority": 6,
+          "target_pool": "runnable_now",
+          "handler": "audit_systemd_drift",
+          "boundary": "read_only_audit",
+          "done_when": "systemd state documented",
+          "risk_level": "low"
+        },
+        {
+          "template_id": "drift-control-integrity",
+          "name": "verify_control_plane_integrity",
+          "title": "验证控制平面文件完整性",
+          "phase": "P2",
+          "priority": 7,
+          "target_pool": "runnable_now",
+          "handler": "verify_control_plane_integrity",
+          "boundary": "read_only_verification",
+          "done_when": "All control plane JSON files valid",
+          "risk_level": "low"
+        }
+      ]
+    },
+    "roadmap_tasks": {
+      "description": "Roadmap tasks - low-risk proposals",
+      "auto_generate": true,
+      "generation_frequency_hours": 336,
+      "cooldown_hours": 24,
+      "templates": [
+        {
+          "template_id": "roadmap-test-coverage",
+          "name": "analyze_test_coverage_gaps",
+          "title": "分析测试覆盖缺口",
+          "phase": "P2",
+          "priority": 9,
+          "target_pool": "runnable_now",
+          "handler": "analyze_test_coverage",
+          "boundary": "analysis_then_recommend",
+          "done_when": "Coverage gaps documented",
+          "risk_level": "low"
+        }
+      ]
+    }
+  },
+  "execution_policy": {
+    "default_behavior": "auto_execute_runnable_now",
+    "pool_execution_order": [
+      "runnable_now",
+      "analyze_first",
+      "waiting_user"
+    ],
+    "auto_execute_criteria": [
+      "documentation_consistency_fix",
+      "config_consistency_fix",
+      "entry_point_alignment",
+      "control_plane_state_sync",
+      "read_only_audit",
+      "low_risk_single_file_fix",
+      "code_only_schema_compatible_fix",
+      "design_proposal_generation"
+    ],
+    "stop_boundaries": [
+      "phase_transition_P2_to_P3",
+      "paused_task_conflict",
+      "error_threshold_exceeded_3",
+      "user_interrupt",
+      "scale_boundary_sample_to_bulk",
+      "protocol_boundary_http_to_https",
+      "destructive_db_change",
+      "schema_structural_change_requires_new_table"
+    ],
+    "error_handling": {
+      "max_retries": 3,
+      "retry_delay_seconds": 60,
+      "stop_on_consecutive_errors": 3
+    }
+  },
+  "config": {
+    "max_queue_size": 20,
+    "auto_advance": true,
+    "stop_on_error": true,
+    "timer_enabled": true,
+    "task_supply_enabled": true
+  },
+  "paused_by_policy": [
+    {
+      "id": "https-certificate",
+      "name": "HTTPS/SSL 证书配置",
+      "reason": "ICP 备案限制",
+      "resume_condition": "ICP filing completed"
+    },
+    {
+      "id": "domain-access",
+      "name": "jlupdb.me 域名公网访问",
+      "reason": "ICP 备案限制",
+      "resume_condition": "ICP filing completed"
+    },
+    {
+      "id": "large-scale-import",
+      "name": "大规模 PDB 数据导入",
+      "reason": "Awaiting user decision after small-scale verification",
+      "resume_condition": "User confirms to proceed with 25+ structures"
+    }
+  ]
+}
