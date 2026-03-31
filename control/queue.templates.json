@@ -21,6 +21,18 @@
           "boundary": "read_only_audit",
           "done_when": "Inconsistencies documented",
           "risk_level": "low"
+        },
+        {
+          "template_id": "repo-audit-public-state",
+          "name": "audit_public_state_consistency",
+          "title": "审计公开状态一致性 (README vs project_state)",
+          "phase": "P2",
+          "priority": 2,
+          "target_pool": "runnable_now",
+          "handler": "audit_readme_ops",
+          "boundary": "read_only_audit",
+          "done_when": "Inconsistencies documented",
+          "risk_level": "low"
         }
       ]
     },
@@ -64,6 +76,18 @@
           "handler": "verify_pm2_process",
           "boundary": "read_only_verification",
           "done_when": "PM2 process online, no crash loops",
+          "risk_level": "low"
+        },
+        {
+          "template_id": "log-triage-p2-import",
+          "name": "verify_p2_sample_import",
+          "title": "验证 P2 样例导入状态",
+          "phase": "P2",
+          "priority": 3,
+          "target_pool": "runnable_now",
+          "handler": "verify_api_health",
+          "boundary": "read_only_verification",
+          "done_when": "API returns real data (structures > 0)",
           "risk_level": "low"
         }
       ]
@@ -147,7 +171,7 @@
           "target_pool": "runnable_now",
           "handler": "verify_git_truth",
           "boundary": "acceptance_verification",
-          "done_when": "Completion level verified, evidence collected",
+          "done_when": "Completion level verified, may_claim_completed = true",
           "risk_level": "low"
         }
       ]
