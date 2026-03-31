@@ -346,7 +346,7 @@ def _generate_lightweight_event(
     task_name = last_activity_type.replace('.completed', '').replace('.failed', '') if last_activity_type else 'unknown'
     
     outcome = runtime.get('acceptance', {}).get('last_task_outcome', 'unknown')
-    completion_level = runtime.get('acceptance', {}).get('completion_level', 'N/A')
+    git_truth_level = runtime.get('acceptance', {}).get('completion_level', 'N/A')
     
     # Determine if user attention is needed
     attention_needed = (
@@ -361,7 +361,7 @@ def _generate_lightweight_event(
         f"**Trigger**: {last_activity}",
         f"**Task**: {task_name}",
         f"**Outcome**: {outcome}",
-        f"**Completion Level**: {completion_level}",
+        f"**Git Truth Level**: {git_truth_level} — project-wide",
         f"**Attention Needed**: {'Yes' if attention_needed else 'No'}",
         "",
         "---",

@@ -525,7 +525,7 @@ def _write_status_bridge(queue: dict, runtime: dict, context_policy: dict = None
         f"**Unread Event**: {'yes' if summary_state.get('unread_event', False) else 'no'}",
         f"**Event Update**: {'available (control/reports/latest_event.md)' if (CONTROL_DIR / 'reports' / 'latest_event.md').exists() and summary_state.get('unread_event', False) else 'none'}",
         f"**Last Task Outcome**: {runtime.get('acceptance', {}).get('last_task_outcome', 'N/A')}",
-        f"**Completion Level**: {git_truth['completion_level'] if git_truth else 'N/A'} ({_level_label(git_truth['completion_level']) if git_truth else ''})",
+        f"**Git Truth Level**: {git_truth['completion_level'] if git_truth else 'N/A'} ({_level_label(git_truth['completion_level']) if git_truth else ''}) — project-wide",
         f"",
         f"## Recent",
         f"{recent_block}",
