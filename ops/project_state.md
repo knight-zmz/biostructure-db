@@ -11,8 +11,8 @@
 Control plane v1.3 operational. Task auto-supply verified end-to-end.  
 Summary/report layer active. Status query protocol established.
 
-**Next major milestone**: Re-enable timer for autonomous operation  
-(currently timer disabled, agent loop manual-trigger only)
+**Next major milestone**: Test timer operational, evaluating sustained autonomous operation  
+(test timer enabled: every 20 min, 2026-03-31 20:29; prod timer paused by design)
 
 ---
 
@@ -44,10 +44,10 @@ Summary/report layer active. Status query protocol established.
 
 | Risk | Level |
 |---|---|
-| Backup cron | ✅ Verified (1 successful run, 7-day cycle pending) |
-| Monitoring cron | ✅ Verified (alert system functional, detected 23:50-06:00 outage) |
+| Backup cron | ✅ Verified (daily 2am execution confirmed) |
+| Monitoring cron | ✅ Verified (alert system functional) |
 | Node.js 20 deprecation (2026-04-30 EOL) | 🟢 Low |
-| Timer disabled — no autonomous operation | ℹ️ By design |
+| Test timer evaluation | 🟡 In progress (20min interval, monitoring stability) |
 
 ---
 
