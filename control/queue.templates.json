@@ -80,8 +80,8 @@
         },
         {
           "template_id": "log-triage-p2-import",
-          "name": "verify_p2_sample_import",
-          "title": "验证 P2 样例导入状态",
+          "name": "verify_api_health",
+          "title": "验证 API 健康状态",
           "phase": "P2",
           "priority": 3,
           "target_pool": "runnable_now",
