@@ -711,7 +711,15 @@ def main():
     }
     
     logger.info(f"Current phase: {runtime.get('current_state', {}).get('phase', 'unknown')}")
-    logger.info(f"Queue size: {len(queue.get('queue', []))} pending tasks")
+    
+    # Count pending tasks from task_pools (not old queue[] structure)
+    pending_count = sum(
+        1
+        for pool in queue.get('task_pools', {}).values()
+        for t in pool
+        if t.get('status') == 'pending'
+    )
+    logger.info(f"Queue size: {pending_count} pending tasks")
     
     # Get next task
     task = get_next_task(queue, runtime, policy)
