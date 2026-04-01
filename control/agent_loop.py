@@ -433,7 +433,6 @@ def _write_status_bridge(queue: dict, runtime: dict, context_policy: dict = None
     task_pools = queue.get('task_pools', {})
     pending = sum(len([t for t in p if t.get('status') == 'pending']) for p in task_pools.values())
     completed_count = len(queue.get('completed', []))
-    failed_count = len([t for t in queue.get('completed', []) if t.get('status') == 'failed'])
     
     # Find actual next runnable task (not from runtime_state, from live queue)
     next_task_name = 'none'
