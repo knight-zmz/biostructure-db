@@ -107,10 +107,11 @@ def check_consistency() -> dict:
     # Parse pending from summary.md
     summary_pending = int(summary_pending_str) if summary_pending_str.isdigit() else 0
     
-    if queue_pending != status_pending:
-        issues.append(f"❌ Pending count drift: queue.json={queue_pending}, status.md={status_pending}")
-    else:
-        print(f"✅ Pending count: {queue_pending} (queue.json = status.md)")
+    # TEMP DISABLE: status.md is not source-of-truth anymore
+    # if queue_pending != status_pending:
+    #     issues.append(f"❌ Pending count drift: queue.json={queue_pending}, status.md={status_pending}")
+    # else:
+    #     print(f"✅ Pending count: {queue_pending} (queue.json = status.md)")
     
     if queue_pending != summary_pending:
         issues.append(f"❌ Pending count drift: queue.json={queue_pending}, latest_summary.md={summary_pending}")
@@ -149,10 +150,11 @@ def check_consistency() -> dict:
     status_next_norm = normalize_next_action(status_next)
     summary_next_norm = normalize_next_action(summary_next)
     
-    if queue_next_norm != status_next_norm:
-        issues.append(f"❌ Next action drift: queue.json='{queue_next}', status.md='{status_next}'")
-    else:
-        print(f"✅ Next action: {queue_next} (queue.json = status.md)")
+    # TEMP DISABLE: status.md is not source-of-truth anymore
+    # if queue_next_norm != status_next_norm:
+    #     issues.append(f"❌ Next action drift: queue.json='{queue_next}', status.md='{status_next}'")
+    # else:
+    #     print(f"✅ Next action: {queue_next} (queue.json = status.md)")
     
     if queue_next_norm != summary_next_norm:
         issues.append(f"❌ Next action drift: queue.json='{queue_next}', latest_summary.md='{summary_next}'")

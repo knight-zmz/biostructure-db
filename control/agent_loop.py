@@ -735,20 +735,23 @@ def main():
             runtime['last_run_at'] = datetime.now().isoformat()
             runtime.setdefault('_meta', {})['updated'] = datetime.now().isoformat()
             
-            # Generate summary for idle state
-            summary_path = evaluate_and_generate(queue, runtime, **run_events)
-            if summary_path:
-                logger.info(f"Summary generated: {summary_path}")
-            
-            # Verify git truth level
+            # Verify git truth level before saving
             git_truth = _verify_git_truth()
             runtime.setdefault('acceptance', {})['completion_level'] = git_truth['completion_level']
             runtime.setdefault('acceptance', {})['last_task_outcome'] = runtime.get('acceptance', {}).get('last_task_outcome', 'N/A')
             
+            # Save updated files first so derived views read persisted source-of-truth
+            save_json(CONTROL_DIR / "queue.json", queue)
+            save_json(CONTROL_DIR / "runtime_state.json", runtime)
+            
+            # Generate summary for idle state based on persisted state
+            summary_path = evaluate_and_generate(queue, runtime, **run_events)
+            if summary_path:
+                logger.info(f"Summary generated: {summary_path}")
+            
             # Write status bridge on idle too
             _write_status_bridge(queue, runtime, context_policy, git_truth)
             
-            save_json(CONTROL_DIR / "runtime_state.json", runtime)
             logger.info(f"Updated runtime_state.json with last_run_at")
             sys.exit(0)
     
@@ -783,15 +786,15 @@ def main():
     runtime.setdefault('acceptance', {})['completion_level'] = git_truth['completion_level']
     runtime.setdefault('acceptance', {})['last_verified'] = datetime.now().isoformat()
     
-    # Generate summary based on what happened
+    # Save updated files first so derived views read persisted source-of-truth
+    save_json(CONTROL_DIR / "queue.json", queue)
+    save_json(CONTROL_DIR / "runtime_state.json", runtime)
+    
+    # Generate summary based on persisted state
     summary_path = evaluate_and_generate(queue, runtime, **run_events)
     if summary_path:
         logger.info(f"Summary generated: {summary_path}")
         logger.info(f"Completion level: {git_truth['completion_level']}")
-    
-    # Save updated files
-    save_json(CONTROL_DIR / "queue.json", queue)
-    save_json(CONTROL_DIR / "runtime_state.json", runtime)
     
     # Write status bridge: always-writeable status file for external consumption
     _write_status_bridge(queue, runtime, context_policy, git_truth)
