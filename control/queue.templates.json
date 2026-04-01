@@ -145,6 +145,19 @@
           "boundary": "read_only_verification",
           "done_when": "Bridge consistency verified or drift documented",
           "risk_level": "low"
+        },
+        {
+          "template_id": "drift-bridge-sync",
+          "name": "sync_bridge_metadata",
+          "title": "同步 Bridge 元数据 (queue→summary)",
+          "phase": "P2",
+          "priority": 1,
+          "target_pool": "runnable_now",
+          "handler": "sync_bridge_metadata",
+          "boundary": "doc_consistency_fix",
+          "done_when": "latest_summary.md Pending/Next Action synced from queue.json",
+          "risk_level": "low",
+          "trigger_condition": "verify_bridge_consistency returns drift_detected"
         }
       ]
     },
@@ -184,6 +197,50 @@
           "handler": "verify_git_truth",
           "boundary": "acceptance_verification",
           "done_when": "Completion level verified, may_claim_completed = true",
+          "risk_level": "low"
+        }
+      ]
+    },
+    "periodic_audit_tasks": {
+      "description": "Periodic low-risk read-only audit tasks for continuous verification",
+      "auto_generate": true,
+      "generation_frequency_hours": 4,
+      "cooldown_hours": 1,
+      "templates": [
+        {
+          "template_id": "periodic-bridge-verify",
+          "name": "verify_bridge_consistency",
+          "title": "验证 Bridge 一致性 (queue/status/summary)",
+          "phase": "P2",
+          "priority": 1,
+          "target_pool": "runnable_now",
+          "handler": "verify_bridge_consistency",
+          "boundary": "read_only_verification",
+          "done_when": "Bridge consistency verified or drift documented",
+          "risk_level": "low"
+        },
+        {
+          "template_id": "periodic-pm2-health",
+          "name": "verify_pm2_process_health",
+          "title": "验证 PM2 进程健康状态",
+          "phase": "P2",
+          "priority": 2,
+          "target_pool": "runnable_now",
+          "handler": "verify_pm2_process",
+          "boundary": "read_only_verification",
+          "done_when": "PM2 process online, no crash loops",
+          "risk_level": "low"
+        },
+        {
+          "template_id": "periodic-git-truth",
+          "name": "verify_git_truth",
+          "title": "验证 Git 真源状态 (L4)",
+          "phase": "P2",
+          "priority": 3,
+          "target_pool": "runnable_now",
+          "handler": "verify_git_truth",
+          "boundary": "acceptance_verification",
+          "done_when": "Completion level verified",
           "risk_level": "low"
         }
       ]
