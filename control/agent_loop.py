@@ -432,7 +432,7 @@ def _write_status_bridge(queue: dict, runtime: dict, context_policy: dict = None
     # Count queue state from the SAME queue snapshot
     task_pools = queue.get('task_pools', {})
     pending = sum(len([t for t in p if t.get('status') == 'pending']) for p in task_pools.values())
-    completed_count = len([t for t in queue.get('completed', []) if t.get('status') == 'completed'])
+    completed_count = len(queue.get('completed', []))
     failed_count = len([t for t in queue.get('completed', []) if t.get('status') == 'failed'])
     
     # Find actual next runnable task (not from runtime_state, from live queue)
@@ -527,7 +527,7 @@ def _write_status_bridge(queue: dict, runtime: dict, context_policy: dict = None
         f"**Updated**: {now}",
         f"**Mode**: {mode_label}",
         f"**Phase**: {phase} ({phase_status})",
-        f"**Queue**: {pending} pending, {completed_count} completed, {failed_count} failed",
+        f"**Queue**: {pending} pending, {completed_count} completed",
         f"**Idle**: {'yes (' + str(idle_cycles) + ' cycles)' if is_idle else 'no'}",
         f"**Last Activity**: {last_activity}",
         f"**Last Summary**: {last_summary_reason}",

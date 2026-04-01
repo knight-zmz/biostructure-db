@@ -18,3 +18,16 @@ node_modules/
 
 # Runtime queue (was queue.json mixed, now split)
 control/queue.json
+
+# OpenClaw workspace artifacts (not project source)
+.openclaw/
+HEARTBEAT.md
+IDENTITY.md
+MEMORY.md
+SOUL.md
+TOOLS.md
+USER.md
+
+
+# Accidental local junk
+e HEAD

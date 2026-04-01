@@ -125,21 +125,17 @@ def _should_suppress(reason: str, summary_state: dict) -> bool:
 
 def _count_queue(queue: dict) -> Dict[str, int]:
     """Count tasks by status across all pools."""
-    counts = {'pending': 0, 'completed': 0, 'failed': 0}
+    counts = {'pending': 0, 'completed': 0}
     
-    # Multi-pool structure
+    # Multi-pool structure - count pending
     task_pools = queue.get('task_pools', {})
     for pool_name, tasks in task_pools.items():
         for t in tasks:
-            status = t.get('status', 'unknown')
-            if status in counts:
-                counts[status] += 1
+            if t.get('status') == 'pending':
+                counts['pending'] += 1
     
-    # Completed tasks
-    for t in queue.get('completed', []):
-        status = t.get('status', 'unknown')
-        if status in counts:
-            counts[status] += 1
+    # Completed tasks - count from completed array
+    counts['completed'] = len(queue.get('completed', []))
     
     return counts
 
@@ -212,12 +208,12 @@ def generate_summary(
     queue_counts = _count_queue(queue)
     pending_count = queue_counts['pending']
     completed_count = queue_counts['completed']
-    failed_count = queue_counts['failed']
     
     recent_completed = _get_recent_tasks(queue, 'completed', limit=5)
-    recent_failed = _get_recent_tasks(queue, 'failed', limit=3)
     
     idle_cycles = summary_state.get('idle_cycles', 0)
+    
+    # Note: failed semantics removed - queue.completed[] is not a failed history
     
     # Next action: compute from queue directly (same as get_compact_summary)
     task_pools = queue.get('task_pools', {})
@@ -260,7 +256,6 @@ def generate_summary(
     lines.append(f"## Queue Overview")
     lines.append(f"- **Pending**: {pending_count}")
     lines.append(f"- **Completed**: {completed_count}")
-    lines.append(f"- **Failed**: {failed_count}")
     lines.append(f"- **Idle Cycles**: {idle_cycles}")
     lines.append(f"")
     
@@ -271,15 +266,6 @@ def generate_summary(
             completed_at = t.get('completed_at', 'N/A')
             handler = t.get('handler', '')
             lines.append(f"- ✅ {name} ({handler}) — {completed_at}")
-        lines.append(f"")
-    
-    if recent_failed:
-        lines.append(f"## Recently Failed")
-        for t in recent_failed:
-            name = t.get('title') or t.get('name', t.get('id', 'unknown'))
-            result = t.get('result', {})
-            error = result.get('error', 'unknown error')
-            lines.append(f"- ❌ {name} — {error}")
         lines.append(f"")
     
     lines.append(f"## Next Action")
@@ -422,7 +408,7 @@ def get_compact_summary(runtime: dict, queue: dict) -> Optional[str]:
     task_pools = queue.get('task_pools', {})
     pending = sum(len([t for t in p if t.get('status') == 'pending']) for p in task_pools.values())
     completed = len(queue.get('completed', []))
-    failed = len([t for t in queue.get('completed', []) if t.get('status') == 'failed'])
+    # Note: failed count removed - queue.completed[] is not a failed history
     
     # Event description
     event_labels = {
@@ -446,17 +432,9 @@ def get_compact_summary(runtime: dict, queue: dict) -> Optional[str]:
     
     lines = [
         f"**Event**: {event_label} at {last_time}",
-        f"**Queue**: {pending} pending, {completed} done, {failed} failed",
+        f"**Queue**: {pending} pending, {completed} done",
         f"**Next**: {next_action}",
     ]
-    
-    # Add failure detail if applicable
-    if last_event == 'task_failed':
-        recent_failed = [t for t in queue.get('completed', []) if t.get('status') == 'failed']
-        if recent_failed:
-            last_fail = recent_failed[-1]
-            error = last_fail.get('result', {}).get('error', 'unknown')
-            lines.insert(1, f"**Failed**: {last_fail.get('name', '?')} — {error}")
     
     return '\n'.join(lines)
 

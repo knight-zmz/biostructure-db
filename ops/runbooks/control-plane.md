@@ -25,9 +25,12 @@ cat control/status.md
 
 ```bash
 scripts/test-timer-toggle.sh [on|off|status]
+systemctl list-units --type=timer | grep openclaw
 ```
 
-当前状态：两个 timer 均 disabled + inactive。
+当前状态（2026-03-31）：
+- `openclaw-agent.timer`: disabled（生产 timer，默认关闭）
+- `openclaw-agent-test.timer`: enabled（测试 timer，20 分钟间隔，评估中）
 
 ## 相关文档
 
