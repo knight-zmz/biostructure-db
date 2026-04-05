@@ -40,16 +40,16 @@
                         </span>
                     </div>
                     <div class="col-md-6 text-end">
-                        <button class="btn btn-sm btn-outline-primary" onclick="changeRepresentation('cartoon')">
+                        <button id="btn-cartoon" class="btn btn-sm btn-outline-primary" onclick="changeRepresentation('cartoon')" disabled>
                             <i class="bi bi-ribbons"></i> Cartoon
                         </button>
-                        <button class="btn btn-sm btn-outline-primary" onclick="changeRepresentation('ball+stick')">
+                        <button id="btn-ballstick" class="btn btn-sm btn-outline-primary" onclick="changeRepresentation('ball+stick')" disabled>
                             <i class="bi bi-circle"></i> Ball+Stick
                         </button>
-                        <button class="btn btn-sm btn-outline-primary" onclick="changeRepresentation('surface')">
+                        <button id="btn-surface" class="btn btn-sm btn-outline-primary" onclick="changeRepresentation('surface')" disabled>
                             <i class="bi bi-moisture"></i> Surface
                         </button>
-                        <button class="btn btn-sm btn-outline-secondary" onclick="resetView()">
+                        <button id="btn-reset" class="btn btn-sm btn-outline-secondary" onclick="resetView()" disabled>
                             <i class="bi bi-arrow-counterclockwise"></i> Reset
                         </button>
                     </div>
@@ -128,16 +128,19 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Load from RCSB PDB file URL
         stage.loadFile(`https://files.rcsb.org/download/${pdbId}.pdb`).then(function(comp) {
-            // Hide loading spinner
             document.getElementById('loading').style.display = 'none';
             
-            // Add main representation
+            // Enable buttons
+            document.getElementById('btn-cartoon').disabled = false;
+            document.getElementById('btn-ballstick').disabled = false;
+            document.getElementById('btn-surface').disabled = false;
+            document.getElementById('btn-reset').disabled = false;
+            
             comp.addRepresentation(reprType, {
                 colorScheme: "chainId",
                 sidechain: "trace"
             });
             
-            // Add ligands if present
             if (hasLigands) {
                 comp.addRepresentation("ball+stick", {
                     sele: "hetero and not water",
@@ -159,7 +162,10 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function changeRepresentation(type) {
-    if (!stage) return;
+    if (!stage || !stage.components.length) {
+        console.warn('Structure not loaded yet');
+        return;
+    }
     reprType = type;
     stage.eachComponent(function(comp) {
         comp.clearRepresentations();
@@ -190,12 +196,13 @@ function changeRepresentation(type) {
     });
 }
 
-function resetView() {
-    if (!stage) return;
+window.changeRepresentation = changeRepresentation;
+window.resetView = function() {
+    if (!stage || !stage.components.length) return;
     stage.eachComponent(function(comp) {
         comp.autoView();
     });
-}
+};
 </script>
 
 <style>
