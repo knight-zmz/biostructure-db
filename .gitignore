@@ -1,3 +1,9 @@
-node_modules/
+*.pyc
+__pycache__/
+*.db
+*.pid
 .env
-.DS_Store
+node_modules/
+memory/
+server.pid
+app/static/pdb_files/
