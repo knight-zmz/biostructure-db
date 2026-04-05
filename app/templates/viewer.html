@@ -17,7 +17,17 @@
                 <span class="badge bg-light text-dark">{{ protein['method'] }}</span>
             </div>
             <div class="card-body p-0">
-                <div id="viewport" style="width: 100%; height: 600px; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-radius: 8px;"></div>
+                <div id="viewport" style="width: 100%; height: 600px; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-radius: 8px; position: relative;">
+                    <div id="loading" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; text-align: center;">
+                        <div class="spinner-border text-light mb-2" role="status"></div>
+                        <div>Loading structure from RCSB PDB...</div>
+                    </div>
+                    <div id="error" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #ff6b6b; text-align: center; padding: 20px;">
+                        <i class="bi bi-exclamation-triangle" style="font-size: 2rem;"></i>
+                        <div class="mt-2">Failed to load structure</div>
+                        <div class="small text-muted mt-1">Check your internet connection</div>
+                    </div>
+                </div>
             </div>
             <div class="card-footer bg-light">
                 <div class="row align-items-center">
@@ -60,13 +70,11 @@
                     <tr><th>Resolution</th><td>{{ protein['resolution'] }} Å</td></tr>
                     <tr><th>Chains</th><td>{{ protein['chain_count'] }}</td></tr>
                     <tr><th>Residues</th><td>{{ protein['residue_count'] }}</td></tr>
-                    <tr><th>Atoms</th><td>{{ "{:,}".format(protein['atom_count']) if protein.get('atom_count') else 'N/A' }}</td></tr>
-                    {% if protein.get('structure_class') %}
-                    <tr><th>Class</th><td>{{ protein['structure_class'] }}</td></tr>
+                    {% if protein.get('atom_count') %}
+                    <tr><th>Atoms</th><td>{{ "{:,}".format(protein['atom_count']) }}</td></tr>
                     {% endif %}
-                    {% if protein.get('r_work') %}
-                    <tr><th>R-work</th><td>{{ protein['r_work'] }}</td></tr>
-                    <tr><th>R-free</th><td>{{ protein['r_free'] }}</td></tr>
+                    {% if protein.get('structure_class') %}
+                    <tr><th>Class</th><td><span class="badge bg-info">{{ protein['structure_class'] }}</span></td></tr>
                     {% endif %}
                 </table>
             </div>
@@ -94,13 +102,10 @@
             <div class="card-body">
                 <div class="d-grid gap-2">
                     <a href="https://files.rcsb.org/download/{{ protein['id'] }}.pdb" class="btn btn-outline-primary btn-sm" target="_blank">
-                        <i class="bi bi-filetype-pdb"></i> Download PDB
-                    </a>
-                    <a href="https://files.rcsb.org/download/{{ protein['id'] }}.cif" class="btn btn-outline-primary btn-sm" target="_blank">
-                        <i class="bi bi-filetype-xml"></i> Download mmCIF
+                        <i class="bi bi-filetype-pdb"></i> PDB File
                     </a>
                     <a href="/api/v1/proteins/{{ protein['id'] }}/fasta" class="btn btn-outline-secondary btn-sm">
-                        <i class="bi bi-filetype-txt"></i> Download FASTA
+                        <i class="bi bi-filetype-txt"></i> FASTA
                     </a>
                 </div>
             </div>
@@ -112,34 +117,53 @@
 <script src="https://unpkg.com/ngl@2.0.0-dev.39/dist/ngl.js"></script>
 <script>
 let stage, reprType = 'cartoon';
+const pdbId = "{{ protein['id'] }}";
+const hasLigands = {{ 'true' if protein.get('has_ligands') else 'false' }};
 
 document.addEventListener('DOMContentLoaded', function() {
-    stage = new NGL.Stage("viewport", { backgroundColor: "#1a1a2e" });
-    const pdbId = "{{ protein['id'] }}";
-    
-    // Load structure from RCSB
-    stage.loadFile(`rcsb://${pdbId}`, { ext: "cif" }).then(function(comp) {
-        comp.addRepresentation(reprType, {
-            colorScheme: "chainId",
-            sidechain: "trace"
+    try {
+        stage = new NGL.Stage("viewport", { 
+            backgroundColor: "#1a1a2e"
         });
         
-        // Add ligands if present
-        {% if protein.get('has_ligands') %}
-        comp.addRepresentation("ball+stick", {
-            sele: "hetero and not water",
-            color: "element"
+        // Load from RCSB PDB file URL
+        stage.loadFile(`https://files.rcsb.org/download/${pdbId}.pdb`).then(function(comp) {
+            // Hide loading spinner
+            document.getElementById('loading').style.display = 'none';
+            
+            // Add main representation
+            comp.addRepresentation(reprType, {
+                colorScheme: "chainId",
+                sidechain: "trace"
+            });
+            
+            // Add ligands if present
+            if (hasLigands) {
+                comp.addRepresentation("ball+stick", {
+                    sele: "hetero and not water",
+                    color: "element"
+                });
+            }
+            
+            comp.autoView();
+        }).catch(function(err) {
+            console.error("Failed to load structure:", err);
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('error').style.display = 'block';
         });
-        {% endif %}
-        
-        comp.autoView();
-    });
+    } catch(err) {
+        console.error("NGL initialization error:", err);
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('error').style.display = 'block';
+    }
 });
 
 function changeRepresentation(type) {
+    if (!stage) return;
     reprType = type;
     stage.eachComponent(function(comp) {
         comp.clearRepresentations();
+        
         if (type === 'surface') {
             comp.addRepresentation('surface', {
                 colorScheme: "chainId",
@@ -157,16 +181,17 @@ function changeRepresentation(type) {
             });
         }
         
-        {% if protein.get('has_ligands') %}
-        comp.addRepresentation("ball+stick", {
-            sele: "hetero and not water",
-            color: "element"
-        });
-        {% endif %}
+        if (hasLigands) {
+            comp.addRepresentation("ball+stick", {
+                sele: "hetero and not water",
+                color: "element"
+            });
+        }
     });
 }
 
 function resetView() {
+    if (!stage) return;
     stage.eachComponent(function(comp) {
         comp.autoView();
     });
@@ -175,13 +200,5 @@ function resetView() {
 
 <style>
 #viewport { position: relative; }
-#viewport::after {
-    content: "Powered by NGL Viewer";
-    position: absolute;
-    bottom: 10px;
-    right: 10px;
-    color: rgba(255,255,255,0.5);
-    font-size: 12px;
-}
 </style>
 {% endblock %}
