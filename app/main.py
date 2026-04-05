@@ -321,9 +321,18 @@ async def viewer(request: Request, pdb_id: str):
     await db.close()
     if not protein:
         raise HTTPException(status_code=404, detail=f"Protein {pdb_id} not found")
+    
+    protein_dict = dict(protein)
+    # Parse JSON fields
+    for field in ["ligand_list", "related_entries"]:
+        try:
+            protein_dict[field] = json.loads(protein_dict[field]) if protein_dict[field] else []
+        except:
+            protein_dict[field] = []
+    
     return templates.TemplateResponse("viewer.html", {
         "request": request,
-        "protein": dict(protein)
+        "protein": protein_dict
     })
 
 @app.get("/stats", response_class=HTMLResponse)
