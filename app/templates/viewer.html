@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+{% block title %}3D Viewer: {{ protein['id'] }} - JLU Protein Database{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/"><i class="bi bi-house"></i> Home</a></li>
+        <li class="breadcrumb-item"><a href="/pdb/{{ protein['id'] }}">{{ protein['id'] }}</a></li>
+        <li class="breadcrumb-item active">3D Viewer</li>
+    </ol>
+</nav>
+
+<div class="row">
+    <div class="col-lg-9">
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-box"></i> 3D Structure Viewer - {{ protein['id'] }}</h5>
+                <span class="badge bg-light text-dark">{{ protein['method'] }}</span>
+            </div>
+            <div class="card-body p-0">
+                <div id="viewport" style="width: 100%; height: 600px; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-radius: 8px;"></div>
+            </div>
+            <div class="card-footer bg-light">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <strong>Controls:</strong>
+                        <span class="small text-muted ms-2">
+                            <i class="bi bi-mouse"></i> Left-click: Rotate | 
+                            <i class="bi bi-mouse"></i> Right-click: Translate | 
+                            <i class="bi bi-mouse"></i> Scroll: Zoom
+                        </span>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <button class="btn btn-sm btn-outline-primary" onclick="changeRepresentation('cartoon')">
+                            <i class="bi bi-ribbons"></i> Cartoon
+                        </button>
+                        <button class="btn btn-sm btn-outline-primary" onclick="changeRepresentation('ball+stick')">
+                            <i class="bi bi-circle"></i> Ball+Stick
+                        </button>
+                        <button class="btn btn-sm btn-outline-primary" onclick="changeRepresentation('surface')">
+                            <i class="bi bi-moisture"></i> Surface
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="resetView()">
+                            <i class="bi bi-arrow-counterclockwise"></i> Reset
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3">
+        <div class="card mb-3">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0"><i class="bi bi-info-circle"></i> Structure Info</h6>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm small">
+                    <tr><th>PDB ID</th><td><strong>{{ protein['id'] }}</strong></td></tr>
+                    <tr><th>Name</th><td>{{ protein['name'] }}</td></tr>
+                    <tr><th>Organism</th><td>{{ protein['organism'] }}</td></tr>
+                    <tr><th>Resolution</th><td>{{ protein['resolution'] }} Å</td></tr>
+                    <tr><th>Chains</th><td>{{ protein['chain_count'] }}</td></tr>
+                    <tr><th>Residues</th><td>{{ protein['residue_count'] }}</td></tr>
+                    <tr><th>Atoms</th><td>{{ "{:,}".format(protein['atom_count']) if protein.get('atom_count') else 'N/A' }}</td></tr>
+                    {% if protein.get('structure_class') %}
+                    <tr><th>Class</th><td>{{ protein['structure_class'] }}</td></tr>
+                    {% endif %}
+                    {% if protein.get('r_work') %}
+                    <tr><th>R-work</th><td>{{ protein['r_work'] }}</td></tr>
+                    <tr><th>R-free</th><td>{{ protein['r_free'] }}</td></tr>
+                    {% endif %}
+                </table>
+            </div>
+        </div>
+        
+        {% if protein.get('ligand_list') and protein['ligand_list']|length > 0 %}
+        <div class="card mb-3">
+            <div class="card-header bg-warning text-dark">
+                <h6 class="mb-0"><i class="bi bi-diamond"></i> Ligands</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-flex flex-wrap gap-2">
+                    {% for ligand in protein['ligand_list'] %}
+                    <span class="badge bg-secondary">{{ ligand }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h6 class="mb-0"><i class="bi bi-download"></i> Download</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="https://files.rcsb.org/download/{{ protein['id'] }}.pdb" class="btn btn-outline-primary btn-sm" target="_blank">
+                        <i class="bi bi-filetype-pdb"></i> Download PDB
+                    </a>
+                    <a href="https://files.rcsb.org/download/{{ protein['id'] }}.cif" class="btn btn-outline-primary btn-sm" target="_blank">
+                        <i class="bi bi-filetype-xml"></i> Download mmCIF
+                    </a>
+                    <a href="/api/v1/proteins/{{ protein['id'] }}/fasta" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-filetype-txt"></i> Download FASTA
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- NGL Viewer -->
+<script src="https://unpkg.com/ngl@2.0.0-dev.39/dist/ngl.js"></script>
+<script>
+let stage, reprType = 'cartoon';
+
+document.addEventListener('DOMContentLoaded', function() {
+    stage = new NGL.Stage("viewport", { backgroundColor: "#1a1a2e" });
+    const pdbId = "{{ protein['id'] }}";
+    
+    // Load structure from RCSB
+    stage.loadFile(`rcsb://${pdbId}`, { ext: "cif" }).then(function(comp) {
+        comp.addRepresentation(reprType, {
+            colorScheme: "chainId",
+            sidechain: "trace"
+        });
+        
+        // Add ligands if present
+        {% if protein.get('has_ligands') %}
+        comp.addRepresentation("ball+stick", {
+            sele: "hetero and not water",
+            color: "element"
+        });
+        {% endif %}
+        
+        comp.autoView();
+    });
+});
+
+function changeRepresentation(type) {
+    reprType = type;
+    stage.eachComponent(function(comp) {
+        comp.clearRepresentations();
+        if (type === 'surface') {
+            comp.addRepresentation('surface', {
+                colorScheme: "chainId",
+                opacity: 0.8
+            });
+        } else if (type === 'ball+stick') {
+            comp.addRepresentation('ball+stick', {
+                colorScheme: "chainId",
+                aspectRatio: 1.5
+            });
+        } else {
+            comp.addRepresentation('cartoon', {
+                colorScheme: "chainId",
+                sidechain: "trace"
+            });
+        }
+        
+        {% if protein.get('has_ligands') %}
+        comp.addRepresentation("ball+stick", {
+            sele: "hetero and not water",
+            color: "element"
+        });
+        {% endif %}
+    });
+}
+
+function resetView() {
+    stage.eachComponent(function(comp) {
+        comp.autoView();
+    });
+}
+</script>
+
+<style>
+#viewport { position: relative; }
+#viewport::after {
+    content: "Powered by NGL Viewer";
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    color: rgba(255,255,255,0.5);
+    font-size: 12px;
+}
+</style>
+{% endblock %}

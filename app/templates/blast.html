@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% block title %}BLAST Search - JLU Protein Database{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/"><i class="bi bi-house"></i> Home</a></li>
+        <li class="breadcrumb-item active">BLAST Search</li>
+    </ol>
+</nav>
+
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="bi bi-search"></i> Sequence Similarity Search (BLAST-like)</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="/blast">
+                    <div class="mb-3">
+                        <label for="sequence" class="form-label">
+                            <strong>Query Sequence</strong>
+                            <span class="text-muted small ms-2">Enter amino acid sequence (one-letter codes)</span>
+                        </label>
+                        <textarea class="form-control" id="sequence" name="sequence" rows="6" 
+                                  placeholder="Example: MVLSPADKTNVKAAWGKVGAHAGEYGAEALERMFLSFPTTKTYFPHFDLSH"
+                                  style="font-family: monospace; font-size: 14px;">{{ query }}</textarea>
+                        <div class="form-text">
+                            <i class="bi bi-info-circle"></i> 
+                            Paste your protein sequence or use one of the examples below
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2 mb-3">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-search"></i> Search
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" onclick="loadExample('1JLU')">
+                            Example: Hemoglobin
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" onclick="loadExample('2ABC')">
+                            Example: GFP
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm ms-auto" onclick="clearSequence()">
+                            Clear
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        {% if error %}
+        <div class="alert alert-danger">
+            <i class="bi bi-exclamation-triangle"></i> {{ error }}
+        </div>
+        {% endif %}
+
+        {% if query and results is not none %}
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-bar-chart"></i> Search Results</h5>
+                <span class="badge bg-light text-dark">{{ results|length }} hits</span>
+            </div>
+            <div class="card-body p-0">
+                {% if results %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Rank</th>
+                                <th>Similarity</th>
+                                <th>PDB ID</th>
+                                <th>Name</th>
+                                <th>Organism</th>
+                                <th>Length</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for hit in results %}
+                            <tr>
+                                <td><span class="badge bg-primary">#{{ loop.index }}</span></td>
+                                <td>
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar bg-success" style="width: {{ hit['similarity'] }}%">
+                                            {{ hit['similarity'] }}%
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><strong class="pdb-id">{{ hit['id'] }}</strong></td>
+                                <td>{{ hit['name'] }}</td>
+                                <td><small>{{ hit['organism'] }}</small></td>
+                                <td>{{ hit['sequence_length'] }}</td>
+                                <td>
+                                    <a href="/pdb/{{ hit['id'] }}" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a href="/viewer/{{ hit['id'] }}" class="btn btn-sm btn-outline-info">
+                                        <i class="bi bi-box"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-warning m-3">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    No significant matches found. Try adjusting your query sequence.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="card bg-light">
+            <div class="card-body">
+                <h6><i class="bi bi-lightbulb"></i> About This Search</h6>
+                <p class="small text-muted mb-0">
+                    This is a simplified BLAST-like sequence similarity search using k-mer based comparison. 
+                    For production use, consider integrating with NCBI BLAST or HMMER for more accurate results.
+                    The search uses 3-mer frequency similarity (Jaccard index) as a fast approximation.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const examples = {
+    '1JLU': 'MVLSPADKTNVKAAWGKVGAHAGEYGAEALERMFLSFPTTKTYFPHFDLSHGSAQVKGHGKKVADALTNAVAHVDDMPNALSALSDLHAHKLRVDPVNFKLLSHCLLVTLAAHLPAEFTPAVHASLDKFLASVSTVLTSKYR',
+    '2ABC': 'MSKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKQHDFFKSAMPEGYVQERTIFFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYIMADKQKNGIKVNFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGM'
+};
+
+function loadExample(pdbId) {
+    document.getElementById('sequence').value = examples[pdbId] || '';
+}
+
+function clearSequence() {
+    document.getElementById('sequence').value = '';
+}
+</script>
+{% endblock %}

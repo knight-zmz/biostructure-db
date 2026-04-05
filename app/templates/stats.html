@@ -16,10 +16,16 @@
             <div>Experimental Methods</div>
         </div>
     </div>
-    <div class="col-md-4 mb-3">
+    <div class="col-md-3 mb-3">
         <div class="stat-card" style="background: linear-gradient(135deg, #fd7e14 0%, #ffc107 100%);">
             <div class="stat-number">{{ avg_res }} Å</div>
             <div>Avg Resolution</div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stat-card" style="background: linear-gradient(135deg, #6f42c1 0%, #e83e8c 100%);">
+            <div class="stat-number">{{ "{:,}".format(total_atoms) if total_atoms else 'N/A' }}</div>
+            <div>Total Atoms</div>
         </div>
     </div>
 </div>
@@ -60,6 +66,30 @@
         </div>
     </div>
 </div>
+
+{% if class_dist %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="bi bi-layers"></i> Structure Classification (SCOP/CATH)</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for item in class_dist %}
+                    <div class="col-md-4 mb-2">
+                        <div class="d-flex justify-content-between align-items-center p-2 bg-light rounded">
+                            <span>{{ item['structure_class'] }}</span>
+                            <span class="badge bg-warning text-dark">{{ item['count'] }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
 
 <div class="row">
     <div class="col-12">
