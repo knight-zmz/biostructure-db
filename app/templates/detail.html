@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}{{ protein['id'] }} - JLU Protein Database{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/"><i class="bi bi-house"></i> Home</a></li>
+        <li class="breadcrumb-item active">{{ protein['id'] }}</li>
+    </ol>
+</nav>
+
+<div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+        <div class="d-flex justify-content-between align-items-center">
+            <h3 class="mb-0">
+                <span class="pdb-id" style="color: white;">{{ protein['id'] }}</span>
+            </h3>
+            <span class="badge bg-light text-dark">{{ protein['method'] }}</span>
+        </div>
+        <h5 class="mt-2 mb-0">{{ protein['name'] }}</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <h5 class="border-bottom pb-2 mb-3">
+                    <i class="bi bi-info-circle"></i> Structure Information
+                </h5>
+                <table class="table table-hover">
+                    <tbody>
+                        <tr>
+                            <th style="width: 150px;"><i class="bi bi-geo-alt"></i> Organism</th>
+                            <td>{{ protein['organism'] }}</td>
+                        </tr>
+                        <tr>
+                            <th><i class="bi bi-microscope"></i> Method</th>
+                            <td>{{ protein['method'] }}</td>
+                        </tr>
+                        <tr>
+                            <th><i class="bi bi-rulers"></i> Resolution</th>
+                            <td><strong>{{ protein['resolution'] }} Å</strong></td>
+                        </tr>
+                        <tr>
+                            <th><i class="bi bi-calendar"></i> Release Date</th>
+                            <td>{{ protein['date'] }}</td>
+                        </tr>
+                        {% if protein['chain_count'] %}
+                        <tr>
+                            <th><i class="bi bi-layers"></i> Chains</th>
+                            <td>{{ protein['chain_count'] }}</td>
+                        </tr>
+                        {% endif %}
+                        {% if protein['residue_count'] %}
+                        <tr>
+                            <th><i class="bi bi-link-45deg"></i> Residues</th>
+                            <td>{{ protein['residue_count'] }}</td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="col-md-6">
+                <h5 class="border-bottom pb-2 mb-3">
+                    <i class="bi bi-code-square"></i> Sequence Data
+                </h5>
+                <div class="sequence-box">
+                    {{ protein['sequence'] }}
+                </div>
+                <div class="mt-3">
+                    <button class="btn btn-outline-secondary btn-sm" 
+                            onclick="navigator.clipboard.writeText('{{ protein['sequence'] }}')">
+                        <i class="bi bi-clipboard"></i> Copy Sequence
+                    </button>
+                    <a href="/api/v1/proteins/{{ protein['id'] }}/fasta" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-download"></i> Download FASTA
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card-footer bg-light">
+        <div class="d-flex justify-content-between align-items-center">
+            <a href="/" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Search
+            </a>
+            <div>
+                <a href="/api/v1/proteins/{{ protein['id'] }}" class="btn btn-outline-primary btn-sm">
+                    <i class="bi bi-code-slash"></i> View as JSON
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-share"></i> Share & Export</h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text small text-muted">Access this structure via our REST API:</p>
+                <div class="bg-light p-3 rounded">
+                    <code class="small">
+                        GET {{ request.url.scheme }}://{{ request.url.host }}/api/v1/proteins/{{ protein['id'] }}
+                    </code>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-link-45deg"></i> Related Structures</h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text small text-muted">
+                    Search for similar structures from the same organism or with similar resolution.
+                </p>
+                <a href="/?search={{ protein['organism'] }}" class="btn btn-sm btn-outline-primary">
+                    Search {{ protein['organism'] }}
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -8,6 +8,6 @@ def parse_header(text: str) -> dict:
 
     # 故意写错：应该是 entry_id，这里却写成 entry
     return {
-        "entry": result.get("entry_id"),
+        "entry_id": result.get("entry_id"),
         "method": result.get("method")
     }

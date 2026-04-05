@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}JLU Protein Database - Home{% endblock %}
+{% block content %}
+<div class="search-box">
+    <h3 class="mb-3"><i class="bi bi-search"></i> Search Protein Structures</h3>
+    <form action="/" method="get">
+        <div class="input-group input-group-lg">
+            <span class="input-group-text"><i class="bi bi-search"></i></span>
+            <input type="text" class="form-control" name="search" 
+                   placeholder="Search by PDB ID, protein name, or organism..." 
+                   value="{{ search }}">
+            <button class="btn btn-primary" type="submit">Search</button>
+        </div>
+    </form>
+    <div class="mt-2 small text-muted">
+        Examples: <code>1JLU</code>, <code>hemoglobin</code>, <code>Homo sapiens</code>
+    </div>
+</div>
+
+{% if search %}
+<div class="alert alert-info d-flex align-items-center">
+    <i class="bi bi-info-circle me-2"></i>
+    <div>
+        <strong>Search Results:</strong> Showing {{ proteins|length }} entries for "{{ search }}"
+    </div>
+    <a href="/" class="btn btn-sm btn-outline-secondary ms-auto">Clear Search</a>
+</div>
+{% endif %}
+
+<div class="row mb-4">
+    <div class="col">
+        <h2>{% if search %}Search Results{% else %}Recent Structural Entries{% endif %}</h2>
+        <p class="text-muted">A curated collection of macromolecular structures from the Protein Data Bank.</p>
+    </div>
+</div>
+
+{% if proteins %}
+<div class="row">
+    {% for protein in proteins %}
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h5 class="card-title mb-0">
+                        <span class="pdb-id">{{ protein['id'] }}</span>
+                    </h5>
+                    <span class="badge bg-primary">{{ protein['method'].split()[0] }}</span>
+                </div>
+                <h6 class="card-subtitle mb-2 text-muted">{{ protein['name'] }}</h6>
+                <p class="card-text small">
+                    <i class="bi bi-geo-alt"></i> {{ protein['organism'] }}<br>
+                    <i class="bi bi-rulers"></i> Resolution: <strong>{{ protein['resolution'] }} Å</strong><br>
+                    <i class="bi bi-calendar"></i> {{ protein['date'] }}
+                </p>
+                <div class="d-grid gap-2">
+                    <a href="/pdb/{{ protein['id'] }}" class="btn btn-outline-primary">
+                        <i class="bi bi-eye"></i> View Details
+                    </a>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-0">
+                <small class="text-muted">
+                    {% if protein['chain_count'] %}
+                    <i class="bi bi-layers"></i> {{ protein['chain_count'] }} chain(s)
+                    {% endif %}
+                </small>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="alert alert-warning text-center">
+    <i class="bi bi-exclamation-triangle"></i>
+    <p class="mb-0">No proteins found matching your search criteria.</p>
+</div>
+{% endif %}
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card bg-light">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-code-slash"></i> Developer Access</h5>
+                <p class="card-text">Access our REST API programmatically:</p>
+                <code>GET /api/v1/proteins?search=hemoglobin</code><br>
+                <code>GET /api/v1/proteins/1JLU</code><br>
+                <a href="/docs" class="btn btn-sm btn-primary mt-2">View Full API Documentation</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

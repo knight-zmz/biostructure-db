@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}Statistics - JLU Protein Database{% endblock %}
+{% block content %}
+<h2 class="mb-4"><i class="bi bi-bar-chart"></i> Database Statistics</h2>
+
+<div class="row mb-4">
+    <div class="col-md-4 mb-3">
+        <div class="stat-card">
+            <div class="stat-number">{{ total }}</div>
+            <div>Total Entries</div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="stat-card" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
+            <div class="stat-number">{{ methods }}</div>
+            <div>Experimental Methods</div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="stat-card" style="background: linear-gradient(135deg, #fd7e14 0%, #ffc107 100%);">
+            <div class="stat-number">{{ avg_res }} Å</div>
+            <div>Avg Resolution</div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-microscope"></i> Methods Distribution</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    {% for item in method_dist %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        {{ item['method'] }}
+                        <span class="badge bg-primary rounded-pill">{{ item['count'] }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-geo-alt"></i> Top Organisms</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    {% for item in organism_dist %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        {{ item['organism'] }}
+                        <span class="badge bg-success rounded-pill">{{ item['count'] }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-download"></i> Bulk Export</h5>
+            </div>
+            <div class="card-body">
+                <p>Download the entire database in your preferred format:</p>
+                <div class="d-flex gap-2">
+                    <a href="/api/v1/download/json" class="btn btn-primary">
+                        <i class="bi bi-filetype-json"></i> Download JSON
+                    </a>
+                    <a href="/api/v1/download/fasta" class="btn btn-outline-primary">
+                        <i class="bi bi-filetype-txt"></i> Download FASTA
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card bg-light">
+            <div class="card-body">
+                <h5><i class="bi bi-code-slash"></i> API Access</h5>
+                <p>Access statistics programmatically via our REST API:</p>
+                <code>GET /api/v1/stats</code>
+                <br><br>
+                <a href="/docs" class="btn btn-sm btn-primary">View Full API Documentation</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

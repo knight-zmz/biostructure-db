@@ -1,0 +1,15 @@
+[Unit]
+Description=JLU Protein Database Service
+After=network.target
+
+[Service]
+User=admin
+Group=admin
+WorkingDirectory=/home/admin/openclaw-workspaces/mini-pdb/app
+ExecStart=/usr/bin/python3 /home/admin/openclaw-workspaces/mini-pdb/app/run.py
+Restart=always
+RestartSec=5
+Environment="PATH=/home/admin/.local/bin:/usr/bin:/bin"
+
+[Install]
+WantedBy=multi-user.target
