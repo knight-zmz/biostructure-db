@@ -24,12 +24,18 @@
                 <h5 class="border-bottom pb-2 mb-3">
                     <i class="bi bi-info-circle"></i> Structure Information
                 </h5>
-                <table class="table table-hover">
+                <table class="table table-hover table-sm">
                     <tbody>
                         <tr>
-                            <th style="width: 150px;"><i class="bi bi-geo-alt"></i> Organism</th>
+                            <th style="width: 140px;"><i class="bi bi-geo-alt"></i> Organism</th>
                             <td>{{ protein['organism'] }}</td>
                         </tr>
+                        {% if protein.get('organism_taxid') %}
+                        <tr>
+                            <th><i class="bi bi-hash"></i> TaxID</th>
+                            <td>{{ protein['organism_taxid'] }}</td>
+                        </tr>
+                        {% endif %}
                         <tr>
                             <th><i class="bi bi-microscope"></i> Method</th>
                             <td>{{ protein['method'] }}</td>
@@ -38,20 +44,48 @@
                             <th><i class="bi bi-rulers"></i> Resolution</th>
                             <td><strong>{{ protein['resolution'] }} Å</strong></td>
                         </tr>
+                        {% if protein.get('r_work') %}
+                        <tr>
+                            <th><i class="bi bi-graph-down"></i> R-work</th>
+                            <td>{{ protein['r_work'] }}</td>
+                        </tr>
+                        <tr>
+                            <th><i class="bi bi-graph-up"></i> R-free</th>
+                            <td>{{ protein['r_free'] }}</td>
+                        </tr>
+                        {% endif %}
                         <tr>
                             <th><i class="bi bi-calendar"></i> Release Date</th>
                             <td>{{ protein['date'] }}</td>
                         </tr>
-                        {% if protein['chain_count'] %}
+                        {% if protein.get('deposition_date') %}
+                        <tr>
+                            <th><i class="bi bi-calendar-plus"></i> Deposited</th>
+                            <td>{{ protein['deposition_date'] }}</td>
+                        </tr>
+                        {% endif %}
+                        {% if protein.get('chain_count') %}
                         <tr>
                             <th><i class="bi bi-layers"></i> Chains</th>
                             <td>{{ protein['chain_count'] }}</td>
                         </tr>
                         {% endif %}
-                        {% if protein['residue_count'] %}
+                        {% if protein.get('residue_count') %}
                         <tr>
                             <th><i class="bi bi-link-45deg"></i> Residues</th>
                             <td>{{ protein['residue_count'] }}</td>
+                        </tr>
+                        {% endif %}
+                        {% if protein.get('atom_count') %}
+                        <tr>
+                            <th><i class="bi bi-circle"></i> Atoms</th>
+                            <td>{{ "{:,}".format(protein['atom_count']) }}</td>
+                        </tr>
+                        {% endif %}
+                        {% if protein.get('structure_class') %}
+                        <tr>
+                            <th><i class="bi bi-diagram-3"></i> Class</th>
+                            <td><span class="badge bg-info">{{ protein['structure_class'] }}</span></td>
                         </tr>
                         {% endif %}
                     </tbody>
@@ -61,19 +95,25 @@
                 <h5 class="border-bottom pb-2 mb-3">
                     <i class="bi bi-code-square"></i> Sequence Data
                 </h5>
-                <div class="sequence-box">
+                <div class="sequence-box" style="max-height: 200px; overflow-y: auto; font-size: 13px;">
                     {{ protein['sequence'] }}
                 </div>
-                <div class="mt-3">
+                <div class="mt-2 text-muted small">
+                    Length: {{ protein.get('sequence_length') or protein['sequence']|length }} residues
+                </div>
+                <div class="mt-3 d-flex gap-2 flex-wrap">
                     <button class="btn btn-outline-secondary btn-sm" 
                             onclick="navigator.clipboard.writeText('{{ protein['sequence'] }}')">
-                        <i class="bi bi-clipboard"></i> Copy Sequence
+                        <i class="bi bi-clipboard"></i> Copy
                     </button>
                     <a href="/viewer/{{ protein['id'] }}" class="btn btn-primary btn-sm">
                         <i class="bi bi-box"></i> 3D Viewer
                     </a>
                     <a href="/api/v1/proteins/{{ protein['id'] }}/fasta" class="btn btn-outline-primary btn-sm">
-                        <i class="bi bi-download"></i> Download FASTA
+                        <i class="bi bi-download"></i> FASTA
+                    </a>
+                    <a href="https://files.rcsb.org/download/{{ protein['id'] }}.pdb" class="btn btn-outline-success btn-sm" target="_blank">
+                        <i class="bi bi-filetype-pdb"></i> PDB
                     </a>
                 </div>
             </div>
@@ -81,13 +121,10 @@
     </div>
     <div class="card-footer bg-light">
         <div class="d-flex justify-content-between align-items-center">
-            <a href="/" class="btn btn-secondary">
-                <i class="bi bi-arrow-left"></i> Back to Search
+            <a href="/" class="btn btn-secondary btn-sm">
+                <i class="bi bi-arrow-left"></i> Back
             </a>
-            <div>
-                <a href="/viewer/{{ protein['id'] }}" class="btn btn-primary btn-sm">
-                    <i class="bi bi-box"></i> 3D Structure Viewer
-                </a>
+            <div class="d-flex gap-2">
                 <a href="/api/v1/proteins/{{ protein['id'] }}" class="btn btn-outline-primary btn-sm">
                     <i class="bi bi-code-slash"></i> JSON
                 </a>
@@ -97,33 +134,75 @@
 </div>
 
 <div class="row">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="bi bi-share"></i> Share & Export</h5>
+    {% if protein.get('keywords') %}
+    <div class="col-md-6 mb-3">
+        <div class="card h-100">
+            <div class="card-header bg-warning text-dark">
+                <h6 class="mb-0"><i class="bi bi-tags"></i> Keywords</h6>
             </div>
             <div class="card-body">
-                <p class="card-text small text-muted">Access this structure via our REST API:</p>
-                <div class="bg-light p-3 rounded">
-                    <code class="small">
-                        GET {{ request.url.scheme }}://{{ request.url.host }}/api/v1/proteins/{{ protein['id'] }}
-                    </code>
+                <div class="d-flex flex-wrap gap-2">
+                    {% for keyword in protein['keywords'].split(', ') %}
+                    <span class="badge bg-secondary">{{ keyword }}</span>
+                    {% endfor %}
                 </div>
             </div>
         </div>
     </div>
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="bi bi-link-45deg"></i> Related Structures</h5>
+    {% endif %}
+
+    {% if protein.get('ligand_list') and protein['ligand_list']|length > 0 %}
+    <div class="col-md-6 mb-3">
+        <div class="card h-100">
+            <div class="card-header bg-success text-white">
+                <h6 class="mb-0"><i class="bi bi-diamond"></i> Ligands</h6>
             </div>
             <div class="card-body">
-                <p class="card-text small text-muted">
-                    Search for similar structures from the same organism or with similar resolution.
+                <div class="d-flex flex-wrap gap-2">
+                    {% for ligand in protein['ligand_list'] %}
+                    <span class="badge bg-primary">{{ ligand }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<div class="row">
+    <div class="col-md-6 mb-3">
+        <div class="card h-100">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0"><i class="bi bi-person"></i> Authors</h6>
+            </div>
+            <div class="card-body">
+                <p class="mb-0">{{ protein.get('authors', 'N/A') }}</p>
+                {% if protein.get('pubmed_id') %}
+                <p class="small text-muted mt-2 mb-0">
+                    <i class="bi bi-file-text"></i> PubMed: {{ protein['pubmed_id'] }}
+                    {% if protein.get('doi') %}
+                    | <i class="bi bi-link-45deg"></i> DOI: {{ protein['doi'] }}
+                    {% endif %}
                 </p>
-                <a href="/?search={{ protein['organism'] }}" class="btn btn-sm btn-outline-primary">
-                    Search {{ protein['organism'] }}
-                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-3">
+        <div class="card h-100">
+            <div class="card-header bg-secondary text-white">
+                <h6 class="mb-0"><i class="bi bi-link-45deg"></i> Related Structures</h6>
+            </div>
+            <div class="card-body">
+                {% if protein.get('related_entries') and protein['related_entries']|length > 0 %}
+                <div class="d-flex flex-wrap gap-2">
+                    {% for entry in protein['related_entries'] %}
+                    <a href="/pdb/{{ entry }}" class="btn btn-sm btn-outline-primary">{{ entry }}</a>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted mb-0">No related entries</p>
+                {% endif %}
             </div>
         </div>
     </div>
